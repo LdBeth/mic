@@ -38,6 +38,14 @@
     (loop while (whitespacep (peek-char nil stream))
               do (prog (read-char stream)
                     (incf (parse-state-pos state))))
-    (vector-push-extend (setf char (read-char stream))
-                        (parse-buffer state))
-    (read-till-end (parse-buffer state) stream)))
+    (setf char (peek-char stream))
+    (funcall (cond ((letterp char)
+                    #'read-identifier)
+                   ((digitp char)
+                    #'read-number)
+                   (t
+                    (read-punctuactor)))
+             state stream)))
+
+
+
