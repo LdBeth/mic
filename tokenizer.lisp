@@ -24,19 +24,20 @@
   ((pos :initform 0 :type integer)
    (current-state :initform :free :type symbol)
    (buffer :initform
-           (make-array 64 :element-type 'character
+           (make-array 72 :element-type 'character
                           :adjustable t
-                          :fill-pointer 0))
+                          :fill-pointer 0)
+           :accessor
+           parse-buffer)
    (tokens :initform
-           (make-array 640 :adjustable t :initial-element nil :fill-pointer 0))))
+           (make-array 640 :adjustable t
+                           :initial-element nil :fill-pointer 0))))
 
-#|
 (defun get-a-token (state stream)
   (let (char)
-    (while (whitespacep (peek-char nil stream))
-      (read-char stream)
-      (incf (parse-state-pos state)))
-    (setf char (read-char stream))))
-|#
-
-  
+    (loop while (whitespacep (peek-char nil stream))
+              do (prog (read-char stream)
+                    (incf (parse-state-pos state))))
+    (vector-push-extend (setf char (read-char stream))
+                        (parse-buffer state))
+    (read-till-end (parse-buffer state) stream)))
