@@ -1,0 +1,13 @@
+<article xmlns="http://docbook.org/ns/docbook"
+         xmlns:bnf="ldbeth/bnf"
+         version="5.2">
+  <title>C Specification</title>
+  <section>
+    <title>Lexical elements</title>
+    <bnf:bnf>
+      <bnf:def name="token">
+        <bnf:t>keyword</bnf:t>
+      </bnf:def>
+    </bnf:bnf>
+  </section>
+</article>
