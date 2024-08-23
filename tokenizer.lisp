@@ -15,7 +15,8 @@
 (defclass identifier (token)
   ((string :initarg :id :type string)))
 (defclass constant (token)
-  ())
+  ((value :initarg :value :type string)
+   (type :initarg :type :type symbol)))
 (defclass string-literal (token)
   ())
 (defclass punctuactor (token)
@@ -68,9 +69,13 @@
 (defconstant +c-decimal-integer+
   (re:compile-re "[1-9]+[0-9]*(?[uUlL]|ll|LL)?"))
 
-(defun match-keyword (string)
-  "if the string matches a C keyword, return the keyword."
-  (re:match-string (re:match-re +c-keywords+ string :exact t)))
+;; The way ISO C99 intended
+(defconstant +c-octal-integer+
+  (re:compile-re "0[0-7]*"))
+
+(defun match (re string)
+  "if the string matches a regex, return the matched string."
+  (re:match-string (re:match-re re string :exact t)))
 
 (defun match-identifier (string)
   "if the string matches a C keyword, return the keyword."
@@ -90,11 +95,24 @@
     (setf (fill-pointer buffer) 0)
     (read-till-punctuactor buffer stream)
     (or
-     (let ((w (match-keyword buffer)))
+     (let ((w (match +c-keywords+ buffer)))
        (and w (make-instance 'keyword :keyword (intern w))))
-     (let ((w (match-indentifier buffer)))
+     (let ((w (match +c-identifier+ buffer)))
        (and w (make-instance 'identifier :string w)))
      (error "~S is not a valid identifier or keyword." buffer))))
+
+(defun read-number (state stream)
+  "Handles identifier or keywords"
+  (let ((buffer (parse-buffer state)))
+    ;; clear buffer
+    (setf (fill-pointer buffer) 0)
+    (read-till-punctuactor buffer stream)
+    (or
+     (let ((w (match +c-decimal-integer+ buffer)))
+       (and w (make-instance 'constant :value w :type 'decimal)))
+     (let ((w (match +c-octal-integer+ buffer)))
+       (and w (make-instance 'constant :value w :type 'octal)))
+     (error "~S is not a valid number." buffer))))
 
 (defun tokenizer (stream)
   "Tokenize text from a input stream."
