@@ -10,9 +10,10 @@
 
 ;; according to C99 lexical elements
 (defclass keyword (token)
-  ())
+  (kword :initarg :keyword :type symbol))
+
 (defclass identifier (token)
-  ())
+  (string :initarg: :id :type string))
 (defclass constant (token)
   ())
 (defclass string-literal (token)
@@ -59,11 +60,19 @@
                 "default|inline|struct|_Imaginary|do|int|"
                 "switch|double|long|typedef|else|register|union")))
 
+;; We do not plan to support universal-character-name for now
+(defconstant +c-identifier+
+  (re:compile-re "[_a-zA-Z][_0-9a-zA-Z]*"))
+
 ;; Note that "0" is not a decimal number in ISO C99.
 (defconstant +c-decimal-integer+
   (re:compile-re "[1-9]+[0-9]*(?[uUlL]|ll|LL)?"))
 
-(defun match-keywords (string)
+(defun match-keyword (string)
+  "if the string matches a C keyword, return the keyword."
+  (re:match-string (re:match-re +c-keywords+ string :exact t)))
+
+(defun match-identifier (string)
   "if the string matches a C keyword, return the keyword."
   (re:match-string (re:match-re +c-keywords+ string :exact t)))
 
@@ -76,7 +85,16 @@
 
 (defun read-identifier (state stream)
   "Handles identifier or keywords"
-  )
+  (let ((buffer (parse-buffer state)))
+    ;; clear buffer
+    (setf (fill-pointer buffer) 0)
+    (read-till-punctuactor buffer stream)
+    (or
+     (let ((w (match-keyword buffer)))
+       (and w (make-instance 'keyword :keyword (intern w))))
+     (let ((w (match-indentifier buffer)))
+       (and w (make-instance 'identifier :string w)))
+     (error "not a valid identifier."))))
 
 (defun tokenizer (stream)
   "Tokenize text from a input stream."
