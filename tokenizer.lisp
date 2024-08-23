@@ -10,10 +10,10 @@
 
 ;; according to C99 lexical elements
 (defclass keyword (token)
-  (kword :initarg :keyword :type symbol))
+  ((kword :initarg :keyword :type symbol)))
 
 (defclass identifier (token)
-  (string :initarg: :id :type string))
+  ((string :initarg :id :type string)))
 (defclass constant (token)
   ())
 (defclass string-literal (token)
@@ -94,7 +94,7 @@
        (and w (make-instance 'keyword :keyword (intern w))))
      (let ((w (match-indentifier buffer)))
        (and w (make-instance 'identifier :string w)))
-     (error "not a valid identifier."))))
+     (error "~S is not a valid identifier or keyword." buffer))))
 
 (defun tokenizer (stream)
   "Tokenize text from a input stream."
