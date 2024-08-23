@@ -69,7 +69,10 @@
 
 (defun read-till-punctuactor (buffer stream)
   "Handles both identifier or numbers."
-  )
+  (loop never (let ((c (peek-char nil stream nil nil)))
+                (or (whitespacep c)
+                    (find c "[](){}.+-&*+-~!/%<>=^?:;|,#")))
+        do (vector-push-extend (read-char stream) buffer)))
 
 (defun read-identifier (state stream)
   "Handles identifier or keywords"
