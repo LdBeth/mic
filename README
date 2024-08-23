@@ -1,3 +1,9 @@
 Work in Progress C compiler
 
 Copyright (c) Qifan Wang 2024
+
+To run this project, you will need a working Common Lisp
+compiler. Clozure CL or Steel Bank Common Lisp is recommended.
+
+You will also need to setup Quicklisp from https://www.quicklisp.org/beta/
+so the dependency libraries can be downloaded.
