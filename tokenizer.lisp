@@ -74,3 +74,7 @@
 (defun read-identifier (state stream)
   "Handles identifier or keywords"
   )
+
+(defun tokenizer (stream)
+  "Tokenize text from a input stream."
+  )
