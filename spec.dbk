@@ -10,4 +10,12 @@
       </bnf:def>
     </bnf:bnf>
   </section>
+  <section>
+    <title>C99 features explicitly not supported</title>
+    <para>The following features can be handled using external C
+    preprocessor thus no support planned.</para>
+    <itemizedlist>
+      <listitem><para>Trigraph sequences.</para></listitem>
+    </itemizedlist>
+  </section>
 </article>
