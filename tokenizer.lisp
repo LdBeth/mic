@@ -127,8 +127,23 @@ planned."
   (re:compile-re "/[*/]"))
 
 (defun read-comment (buffer stream is-block)
+  ;; Clear buffer first
   (setf (fill-pointer buffer) 0)
-  #| todo |#)
+  (let ((c1 #\*)
+        (c2 #\/)
+        c)
+    (if is-block
+        (loop never (progn
+                      (setf c (read-char stream nil nil))
+                      (or (null c)
+                          (and (eql c c1)
+                               (eql (peek-char nil stream t) c2))))
+              do (vector-push-extend c buffer)
+              finally (read-char stream))
+        (loop never (progn
+                      (setf c (read-char stream nil nil))
+                      (eql c #\newline))
+              do (vector-push-extend c buffer)))))
 
 (defun read-punctuactor (state stream)
   "Read punctuators. This also handles comment, which would
