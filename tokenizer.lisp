@@ -21,6 +21,8 @@
   ())
 (defclass punctuactor (token)
   ((punct :initarg :content :type symbol)))
+(defclass comment (token)
+  ((text :initarg :content :type string)))
 
 (defclass parse-state ()
   ((pos :initform 0 :type integer)
@@ -120,7 +122,8 @@
   (re:compile-re "[[](){}.]"))
 
 (defun read-punctuactor (state stream)
-  "Read punctuators."
+  "Read punctuators. This also handles comment, which would
+not be ignored by the parser."
   (let ((buffer (parse-buffer state)))
     (setf (fill-pointer buffer) 0)
     (vector-push (read-char stream) buffer)
