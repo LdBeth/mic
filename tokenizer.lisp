@@ -27,6 +27,8 @@
 
 (defclass parse-state ()
   ((pos :initform 0 :type integer)
+   (col :initform 0 :type integer)
+   (row :initform 0 :type integer)
    (current-state :initform :free :type symbol)
    (buffer :initform
            (make-array 72 :element-type 'character
@@ -38,21 +40,35 @@
            (make-array 640 :adjustable t
                            :initial-element nil :fill-pointer 0))))
 
-(defun get-a-token (state stream)
+;; redefine standard `read-char' function.
+(defun read-char (stream &optional (eof-error-p t) eof-value)
+  (declare (special *state*))
+  (let ((c (cl:read-char stream eof-error-p eof-value)))
+    (with-slots (pos col row) *state*
+      (if (eql c #\newline)
+          (progn
+            (setf col 0)
+            (incf row)
+            (incf pos))
+          (progn
+            (incf row)
+            (incf col))))))
+
+(defun get-a-token (*state* stream)
+  (declare (special *state*))
   (let (char)
     (loop while (whitespacep (peek-char nil stream))
-              do (prog (read-char stream)
-                    (incf (parse-state-pos state))))
+          do (read-char stream))
     (setf char (peek-char stream))
-    (funcall (cond ((letterp char)
+    (funcall (cond ((cl:alpha-char-p char)
                     #'read-identifier)
-                   ((digitp char)
+                   ((cl:digit-char-p char)
                     #'read-number)
-                   ((quotep char)
+                   ((or (eql #\" char) (eql #\' char))
                     #'read-string)
                    (t
-                    (read-punctuactor)))
-             state stream)))
+                    #'read-punctuactor))
+             *state* stream)))
 
 (defconstant +c-keywords+
   (re:compile-re
@@ -85,7 +101,7 @@
   (re:match-string (re:match-re +c-keywords+ string :exact t)))
 
 (defun punctuactorp (char)
-  (find c "[](){}.+-&*+-~!/%<>=^?:;|,#"))
+  (find char "[](){}.+-&*+-~!/%<>=^?:;|,#"))
 
 (defun read-till-punctuactor (buffer stream)
   "Handles both identifier or numbers."
@@ -94,9 +110,10 @@
                     (punctuactorp c)))
         do (vector-push-extend (read-char stream) buffer)))
 
-(defun read-identifier (state stream)
+(defun read-identifier (*state* stream)
   "Handles identifier or keywords"
-  (let ((buffer (parse-buffer state)))
+  (declare (special *state*))
+  (let ((buffer (parse-buffer *state*)))
     ;; clear buffer
     (setf (fill-pointer buffer) 0)
     (read-till-punctuactor buffer stream)
@@ -107,10 +124,11 @@
        (and w (make-instance 'identifier :content w)))
      (error "~S is not a valid identifier or keyword." buffer))))
 
-(defun read-number (state stream)
+(defun read-number (*state* stream)
   "Handles identifier or keywords. So far only decimal and octal number
 planned."
-  (let ((buffer (parse-buffer state)))
+  (declare (special *state*))
+  (let ((buffer (parse-buffer *state*)))
     (setf (fill-pointer buffer) 0)
     (read-till-punctuactor buffer stream)
     (or
@@ -145,10 +163,11 @@ planned."
                       (eql c #\newline))
               do (vector-push-extend c buffer)))))
 
-(defun read-punctuactor (state stream)
+(defun read-punctuactor (*state* stream)
   "Read punctuators. This also handles comment, which would
 not be ignored by the parser."
-  (let ((buffer (parse-buffer state)))
+  (declare (special *state*))
+  (let ((buffer (parse-buffer *state*)))
     (setf (fill-pointer buffer) 0)
     (vector-push (read-char stream) buffer)
     (let ((c (peek-char nil stream nil nil)))
@@ -161,7 +180,7 @@ not be ignored by the parser."
      ;; comment
      (let ((w (match +c-comment-begin+ buffer)))
        (and w
-            (read-comment buffer stream (string= "/*" is-block))))
+            (read-comment buffer stream (string= "/*" buffer))))
      #|TODO other cases|#)))
 
 (defun tokenizer (stream)
