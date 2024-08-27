@@ -6,23 +6,29 @@
   ((pos :initarg :pos :reader token-position)))
 
 (defmethod print-object ((obj token) stream)
-  (format stream "#<token at ~S>" (token-position obj)))
+  (format stream "#<token ~A at ~S>"
+          (token-content obj) (token-position obj)))
 
 ;; according to C99 lexical elements
 (defclass keyword (token)
-  ((kword :initarg :content :type symbol)))
+  ((kword :initarg :content :type symbol
+          :reader token-content)))
 
 (defclass identifier (token)
-  ((string :initarg :content :type string)))
+  ((string :initarg :content :type string
+           :reader token-content)))
 (defclass constant (token)
-  ((value :initarg :content :type string)
+  ((value :initarg :content :type string
+          :reader token-content)
    (type :initarg :type :type symbol)))
 (defclass string-literal (token)
   ())
 (defclass punctuactor (token)
-  ((punct :initarg :content :type symbol)))
+  ((punct :initarg :content :type symbol
+          :reader token-content)))
 (defclass comment (token)
-  ((text :initarg :content :type string)
+  ((text :initarg :content :type string
+         :reader token-content)
    (is-block :initarg :block-p :type boolean)))
 
 (defclass parse-state ()
@@ -100,7 +106,8 @@
 
 (defun match (re string)
   "if the string matches a regex, return the matched string."
-  (re:match-string (re:match-re re string :exact t)))
+  (let ((m (re:match-re re string :exact t)))
+    (and m (re:match-string m))))
 
 (defun match-identifier (string)
   "if the string matches a C keyword, return the keyword."
