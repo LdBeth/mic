@@ -3,7 +3,7 @@
 
 ;; The token protocol
 (defclass token ()
-  ((pos :reader token-position)))
+  ((pos :initarg :pos :reader token-position)))
 
 (defmethod print-object ((obj token) stream)
   (format stream "#<token at ~S>" (token-position obj)))
@@ -51,15 +51,21 @@
             (incf row)
             (incf pos))
           (progn
-            (incf row)
-            (incf col))))))
+            (incf col))))
+    c))
+
+(defun whitespacep (char)
+  (or (eql char #\space)
+      (eql char #\tab)
+      (eql char #\newline)))
 
 (defun get-a-token (*state* stream)
   (declare (special *state*))
   (let (char)
+    ;; skip whitespace
     (loop while (whitespacep (peek-char nil stream))
           do (read-char stream))
-    (setf char (peek-char stream))
+    (setf char (peek-char nil stream))
     (funcall (cond ((cl:alpha-char-p char)
                     #'read-identifier)
                    ((cl:digit-char-p char)
@@ -113,15 +119,17 @@
 (defun read-identifier (*state* stream)
   "Handles identifier or keywords"
   (declare (special *state*))
-  (let ((buffer (parse-buffer *state*)))
+  (let ((buffer (parse-buffer *state*))
+        (pos (cons (slot-value *state* 'col)
+                   (slot-value *state* 'row))))
     ;; clear buffer
     (setf (fill-pointer buffer) 0)
     (read-till-punctuactor buffer stream)
     (or
      (let ((w (match +c-keywords+ buffer)))
-       (and w (make-instance 'keyword :content (intern w))))
+       (and w (make-instance 'keyword :content (intern w) :pos pos)))
      (let ((w (match +c-identifier+ buffer)))
-       (and w (make-instance 'identifier :content w)))
+       (and w (make-instance 'identifier :content w :pos pos)))
      (error "~S is not a valid identifier or keyword." buffer))))
 
 (defun read-number (*state* stream)
