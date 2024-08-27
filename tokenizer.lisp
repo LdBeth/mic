@@ -22,7 +22,8 @@
 (defclass punctuactor (token)
   ((punct :initarg :content :type symbol)))
 (defclass comment (token)
-  ((text :initarg :content :type string)))
+  ((text :initarg :content :type string)
+   (is-block :initarg :block-p :type boolean)))
 
 (defclass parse-state ()
   ((pos :initform 0 :type integer)
@@ -107,7 +108,8 @@
      (error "~S is not a valid identifier or keyword." buffer))))
 
 (defun read-number (state stream)
-  "Handles identifier or keywords"
+  "Handles identifier or keywords. So far only decimal and octal number
+planned."
   (let ((buffer (parse-buffer state)))
     (setf (fill-pointer buffer) 0)
     (read-till-punctuactor buffer stream)
@@ -121,6 +123,13 @@
 (defconstant +c-1-2-punctuator+
   (re:compile-re "[[](){}.]"))
 
+(defconstant +c-comment-begin+
+  (re:compile-re "/[*/]"))
+
+(defun read-comment (buffer stream is-block)
+  (setf (fill-pointer buffer) 0)
+  #| todo |#)
+
 (defun read-punctuactor (state stream)
   "Read punctuators. This also handles comment, which would
 not be ignored by the parser."
@@ -131,9 +140,14 @@ not be ignored by the parser."
       (when (punctuactorp c)
         (vector-push c buffer)))
     (or
+     ;; one char operators, these are simple case
      (and (= (length buffer) 1)
           (make-instance 'punctuactor :content (intern buffer)))
-     #|other cases|#)))
+     ;; comment
+     (let ((w (match +c-comment-begin+ buffer)))
+       (and w
+            (read-comment buffer stream (string= "/*" is-block))))
+     #|TODO other cases|#)))
 
 (defun tokenizer (stream)
   "Tokenize text from a input stream."
