@@ -20,5 +20,5 @@ goto foo;")
   (mic:tokenizer o))
 
 
-(with-input-from-string (o " int/* asd */foo;")
+(with-input-from-string (o " int/* asd */foo =1+2;")
   (mic:tokenizer o))

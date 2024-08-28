@@ -173,7 +173,6 @@ planned."
 (defun read-comment (buffer stream is-block)
   ;; Clear buffer first
   (setf (fill-pointer buffer) 0)
-  (print buffer)
   (let ((c1 #\*)
         (c2 #\/)
         c)
@@ -189,7 +188,7 @@ planned."
                       (setf c (read-char stream nil nil))
                       (eql c #\newline))
               do (vector-push-extend c buffer)))
-    buffer))
+    (copy-seq buffer)))
 
 (defun read-punctuactor (*state* stream)
   "Read punctuators. This also handles comment, which would
