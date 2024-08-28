@@ -14,3 +14,11 @@
 
 (with-input-from-string (o "  fo+1 ")
   (mic:tokenizer o))
+
+(with-input-from-string (o "  return 1+1;
+goto foo;")
+  (mic:tokenizer o))
+
+
+(with-input-from-string (o " int/* asd */foo;")
+  (mic:tokenizer o))

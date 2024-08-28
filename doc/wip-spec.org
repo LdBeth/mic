@@ -1,0 +1,16 @@
+#+title: Minimal Intercal C Language Specification
+
+* Permitted Tokens
+
+** Currently supported
+
+- All keywords from ISO C99
+- C99 decimal and octal integers
+- =/* */= comment
+
+** Planned but not implemented
+
+At current stage, these can result in unexpected error
+in lexing.
+
+TBD

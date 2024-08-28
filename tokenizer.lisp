@@ -31,6 +31,9 @@
          :reader token-content)
    (is-block :initarg :block-p :type boolean)))
 
+(defmethod print-object ((obj comment) stream)
+  (format stream "#<comment at ~S>" (token-position obj)))
+
 (defclass parse-state ()
   ((pos :initform 0 :type integer)
    (col :initform 0 :type integer)
@@ -170,15 +173,16 @@ planned."
 (defun read-comment (buffer stream is-block)
   ;; Clear buffer first
   (setf (fill-pointer buffer) 0)
+  (print buffer)
   (let ((c1 #\*)
         (c2 #\/)
         c)
     (if is-block
-        (loop never (progn
+        (loop while (progn
                       (setf c (read-char stream nil nil))
-                      (or (null c)
-                          (and (eql c c1)
-                               (eql (peek-char nil stream t) c2))))
+                      (and c
+                          (not (and (eql c c1)
+                                    (eql (peek-char nil stream t) c2)))))
               do (vector-push-extend c buffer)
               finally (read-char stream))
         (loop never (progn
@@ -197,15 +201,17 @@ not be ignored by the parser."
     (vector-push (read-char stream) buffer)
     (let ((c (peek-char nil stream nil nil)))
       (when (punctuactorp c)
-        (vector-push c buffer)))
+        (vector-push (read-char stream) buffer)))
     (or
      ;; one char operators, these are simple case
      (and (= (length buffer) 1)
           (make-instance 'punctuactor :content (intern buffer) :pos pos))
      ;; comment
-     (let ((w (match +c-comment-begin+ buffer)))
-       (and w
-            (read-comment buffer stream (string= "/*" buffer))))
+     (let* ((m (match +c-comment-begin+ buffer))
+            (block-p (string= "/*" m))
+            (w (and m
+                    (read-comment buffer stream block-p))))
+       (and w (make-instance 'comment :content w :pos pos :block-p block-p)))
      #|TODO other cases|#)))
 
 (defun tokenizer (stream)
