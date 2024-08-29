@@ -3,3 +3,6 @@
   (:use #:common-lisp)
   (:shadow #:keyword #:read-char)
   (:export #:tokenizer))
+
+(defpackage #:org.sdf.ldbeth.minimal.intercal.c.symbols
+  (:nicknames #:mic-symbols))

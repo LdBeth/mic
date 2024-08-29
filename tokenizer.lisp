@@ -30,6 +30,9 @@
   ((text :initarg :content :type string
          :reader token-content)
    (is-block :initarg :block-p :type boolean)))
+(defclass preprocessor (token)
+  ((instruction :initarg :content :type string
+                :reader token-content)))
 
 (defmethod print-object ((obj comment) stream)
   (format stream "#<comment at ~S>" (token-position obj)))
@@ -89,13 +92,12 @@
 
 (defconstant +c-keywords+
   (re:compile-re
+   ;; automata constructed using Emacs
    (concatenate 'string
-                "auto|enum|restrict|unsigned|break|"
-                "extern|return|void|case|float|short|volatile|"
-                "char|for|signed|while|const|goto|sizeof|"
-                "_Bool|continue|if|static|_Complex|"
-                "default|inline|struct|_Imaginary|do|int|"
-                "switch|double|long|typedef|else|register|union")))
+                "(?_(?Bool|Complex|Imaginary)|auto|break|c(?ase|har|on(?st|tinue))|"
+                "d(?efault|o(?uble)?)|e(?lse|num|xtern)|f(?loat|or)|goto|"
+                "i(?f|n(?line|t))|long|re(?gister|strict|turn)|s(?hort|i(?gned|zeof)|"
+                "t(?atic|ruct)|witch)|typedef|un(?ion|signed)|vo(?id|latile)|while)")))
 
 ;; We do not plan to support universal-character-name for now
 (defconstant +c-identifier+
@@ -125,7 +127,8 @@
   "Handles both identifier or numbers."
   (loop never (let ((c (peek-char nil stream nil nil)))
                 (or (whitespacep c)
-                    (punctuactorp c)))
+                    (punctuactorp c)
+                    (null c)))
         do (vector-push-extend (read-char stream) buffer)))
 
 (defun make-pos (state)
@@ -142,7 +145,8 @@
     (read-till-punctuactor buffer stream)
     (or
      (let ((w (match +c-keywords+ buffer)))
-       (and w (make-instance 'keyword :content (intern w) :pos pos)))
+       (and w (make-instance 'keyword :content (intern w '#:mic-symbols)
+                                      :pos pos)))
      (let ((w (match +c-identifier+ buffer)))
        (and w (make-instance 'identifier :content w :pos pos)))
      (error "~S is not a valid identifier or keyword." buffer))))
@@ -164,11 +168,21 @@ planned."
                              :pos pos)))
      (error "~S is not a valid number." buffer))))
 
-(defconstant +c-1-2-punctuator+
-  (re:compile-re "[[](){}.]"))
+(defconstant +c-2-punctuator+
+  (re:compile-re
+   "!=|%%[:=>]|&[&=]|%*=|%+[+=]|%-[=-]|/[/*=]|:>|<[%%:<=]|==|>[=>]|^=|%|[=|]"))
+
+(defconstant +c-operators+
+  '("[" "]" "(" ")" "{" "}" "." "->" "++" "--" "&" "*" "+" "-" "~" "!"
+    "/" "%" "<<" ">>" "<" ">" "<=" ">=" "==" "!=" "^" "|" "&&" "||"
+    "?" ":" ";" "..." "=" "*=" "/=" "%=" "+=" "-=" "<<=" ">>=" "&=" "^="
+    "|=" "," "<:" ":>" "<%" "%>"))
 
 (defconstant +c-comment-begin+
   (re:compile-re "/[*/]"))
+
+(defconstant +c-macro-begin+
+  (re:compile-re "#|%%:"))
 
 (defun read-comment (buffer stream is-block)
   ;; Clear buffer first
@@ -186,7 +200,7 @@ planned."
               finally (read-char stream))
         (loop never (progn
                       (setf c (read-char stream nil nil))
-                      (eql c #\newline))
+                      (or (null c) (eql c #\newline)))
               do (vector-push-extend c buffer)))
     (copy-seq buffer)))
 
@@ -200,18 +214,29 @@ not be ignored by the parser."
     (vector-push (read-char stream) buffer)
     (let ((c (peek-char nil stream nil nil)))
       (when (punctuactorp c)
-        (vector-push (read-char stream) buffer)))
+        (vector-push c buffer)))
+    (unless (and
+             (> (length buffer) 1)
+             (and (re:match-re +c-2-punctuator+ buffer)
+                  (read-char stream)))
+      (setf (fill-pointer buffer) 1))
     (or
-     ;; one char operators, these are simple case
-     (and (= (length buffer) 1)
-          (make-instance 'punctuactor :content (intern buffer) :pos pos))
+     (let ((m (find buffer +c-operators+ :test #'string=)))
+       (and m
+            (make-instance 'punctuactor :content (intern m '#:mic-symbols)
+                                        :pos pos)))
      ;; comment
      (let* ((m (match +c-comment-begin+ buffer))
             (block-p (string= "/*" m))
             (w (and m
                     (read-comment buffer stream block-p))))
        (and w (make-instance 'comment :content w :pos pos :block-p block-p)))
-     #|TODO other cases|#)))
+     (let* ((m (match +c-macro-begin+ buffer))
+            (w (and m
+                    (read-comment buffer stream nil))))
+       (and w (make-instance 'preprocessor :content w :pos pos)))
+     ;; other cases
+     (error "~S is not a valid punctuactor." buffer))))
 
 (defun tokenizer (stream)
   "Tokenize text from a input stream."

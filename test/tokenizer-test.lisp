@@ -22,3 +22,10 @@ goto foo;")
 
 (with-input-from-string (o " int/* asd */foo =1+2;")
   (mic:tokenizer o))
+
+(with-input-from-string (o "{return 023; // oct
+  }")
+  (mic:tokenizer o))
+
+(with-input-from-string (o "i+++1")
+  (mic:tokenizer o))

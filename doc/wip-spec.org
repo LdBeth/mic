@@ -15,7 +15,7 @@ convention.
 - C99 decimal and octal integers
 - C99 identifiers
 - One character C99 punctuactor
-- =/* */= comment
+- =/* */= and =//= comment
 
 ** Planned but not implemented
 
@@ -23,4 +23,6 @@ At current stage, these can result in unexpected error
 in lexing.
 
 - Strings and character literals
+- Token =...=
+
 TBD
