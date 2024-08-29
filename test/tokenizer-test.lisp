@@ -3,11 +3,9 @@
 (with-input-from-string (o "  fo+1 ")
   (mic::get-a-token (make-instance 'mic::parse-state) o))
 
-
 (with-input-from-string (o "   
  12L ")
   (mic::get-a-token (make-instance 'mic::parse-state) o))
-
 
 (with-input-from-string (o " /* foo */")
   (mic::get-a-token (make-instance 'mic::parse-state) o))
@@ -19,7 +17,6 @@
 goto foo;")
   (mic:tokenizer o))
 
-
 (with-input-from-string (o " int/* asd */foo =1+2;")
   (mic:tokenizer o))
 
@@ -28,4 +25,9 @@ goto foo;")
   (mic:tokenizer o))
 
 (with-input-from-string (o "i+++1")
+  (mic:tokenizer o))
+
+(with-input-from-string (o "#define foo \\
+this
+")
   (mic:tokenizer o))

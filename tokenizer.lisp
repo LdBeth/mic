@@ -6,7 +6,7 @@
   ((pos :initarg :pos :reader token-position)))
 
 (defmethod print-object ((obj token) stream)
-  (format stream "#<token ~A at ~S>"
+  (format stream "#<token #|~A|# at ~S>"
           (token-content obj) (token-position obj)))
 
 ;; according to C99 lexical elements
@@ -187,21 +187,19 @@ planned."
 (defun read-comment (buffer stream is-block)
   ;; Clear buffer first
   (setf (fill-pointer buffer) 0)
-  (let ((c1 #\*)
-        (c2 #\/)
-        c)
+  (let (c)
     (if is-block
         (loop while (progn
                       (setf c (read-char stream nil nil))
                       (and c
-                          (not (and (eql c c1)
-                                    (eql (peek-char nil stream t) c2)))))
+                          (not (and (eql c #\*)
+                                    (eql (peek-char nil stream t) #\/)))))
               do (vector-push-extend c buffer)
               finally (read-char stream))
-        (loop never (progn
-                      (setf c (read-char stream nil nil))
-                      (or (null c) (eql c #\newline)))
-              do (vector-push-extend c buffer)))
+        (loop always (setf c (read-char stream nil nil))
+              do (vector-push-extend c buffer)
+              until (and (not (eql c #\\))
+                         (eql (peek-char nil stream t) #\newline))))
     (copy-seq buffer)))
 
 (defun read-punctuactor (*state* stream)
@@ -231,6 +229,7 @@ not be ignored by the parser."
             (w (and m
                     (read-comment buffer stream block-p))))
        (and w (make-instance 'comment :content w :pos pos :block-p block-p)))
+     ;; preprocessor instructions
      (let* ((m (match +c-macro-begin+ buffer))
             (w (and m
                     (read-comment buffer stream nil))))

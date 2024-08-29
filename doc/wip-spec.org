@@ -2,7 +2,8 @@
 #+author: Qifan Wang
 
 This is a draft
-* Permitted Tokens
+
+* Summary
 
 ** Currently supported
 
@@ -14,7 +15,7 @@ convention.
 - All keywords from ISO C99
 - C99 decimal and octal integers
 - C99 identifiers
-- One character C99 punctuactor
+- All C99 punctuactors except =##= and =%:%:=
 - =/* */= and =//= comment
 
 ** Planned but not implemented
@@ -26,3 +27,33 @@ in lexing.
 - Token =...=
 
 TBD
+
+* Specification
+
+** Lexical Elements
+
+#+BEGIN_SRC
+  token:
+    keyword
+    identifier
+    constant
+    comment
+    preprocessor-instruction
+#+END_SRC
+
+*** Comment syntax and Preprocessor instructions
+
+#+BEGIN_SRC
+  comment:
+    multiline-comment
+    singleline-comment
+#+END_SRC
+
+A multi-line comment starts with =/*= and can contain any character
+sequences except the ending sequence, and ends with =*/=.
+
+A single line comment starts with =//= and ends with a newline
+that is not prefixed by the line continuation character =\=.
+
+Preprocessor instructions is similar to single line comment
+except starts with =#=.
