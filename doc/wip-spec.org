@@ -32,21 +32,80 @@ TBD
 
 ** Lexical Elements
 
+Note that ='\\'= appears in the grammar actually denotes a single =\=
+character.
+
+Tokens are optionally separated by one or more whitespaces.
+
 #+BEGIN_SRC
   token:
     keyword
     identifier
     constant
+    punctuator
     comment
     preprocessor-instruction
+  whitespace:
+    space
+    tab
+    newline
 #+END_SRC
 
+*** Keywords
+
+They are:
+- =auto=
+- =break=
+- =case=
+- =char=
+- =const=
+- =continue=
+- =default=
+- =do=
+- =double=
+- =else=
+- =enum=
+- =extern=
+- =float=
+- =for=
+- =goto=
+- =if=
+- =inline=
+- =int=
+- =long=
+- =register=
+- =restrict=
+- =return=
+- =short=
+- =signed=
+- =sizeof=
+- =static=
+- =struct=
+- =switch=
+- =typedef=
+- =union=
+- =unsigned=
+- =void=
+- =volatile=
+- =while=
+- =_Bool=
+- =_Complex=
+- =_Imaginary=
+  
 *** Comment syntax and Preprocessor instructions
 
 #+BEGIN_SRC
   comment:
     multiline-comment
     singleline-comment
+  multiline-comment:
+    '/*' "text that does not contain '*/'" '*/'
+  singleline-comment:
+    '//' [ "text that does not contain '\n'" '\\' '\n' ]*
+           "text that does not contain '\n'" '\n'
+  preprocessor-instruction:
+    '#' [ "text that does not contain '\n'" '\\' '\n' ]*
+          "text that does not contain '\n'" '\n'
 #+END_SRC
 
 A multi-line comment starts with =/*= and can contain any character
