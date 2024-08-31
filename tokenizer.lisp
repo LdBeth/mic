@@ -37,7 +37,7 @@
 (defmethod print-object ((obj comment) stream)
   (let* ((s (token-content obj))
          (is-long (> (length s) 10)))
-    (format stream "#<comment \"~:[~A~*~;~A...~A~]\" at ~S>"
+    (format stream "#<comment ~:[~S~*~;~S ... ~S~] at ~S>"
             is-long
             (if is-long
                 (subseq s 0 4)
@@ -47,7 +47,7 @@
 
 (defmethod print-object ((obj preprocessor) stream)
   (let ((s (token-content obj)))
-    (format stream "#<pp \"~:[~A~;~A...~]\" at ~S>"
+    (format stream "#<pp ~:[~S~;~S ...~] at ~S>"
             (> (length s) 5) (subseq s 0 (min (length s) 5)) (token-position obj))))
 
 (defclass parse-state ()
