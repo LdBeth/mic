@@ -34,9 +34,12 @@
               (cond
                 (lexing
                  (format *standard-output* "Lexing file ~A.~%" file)
-                 (with-open-file (f file :direction :input)
-                   (let ((tokens (mic:tokenizer f)))
-                     (format t "~{~a~^~%~}" tokens)))
+                 (handler-bind ((mic:lexing-error (lambda (condition)
+                                                    (format *error-output* "~&~A~&" condition)
+                                                    (user-quit -1))))
+                     (with-open-file (f file :direction :input)
+                       (let ((tokens (mic:tokenizer f)))
+                         (format t "~{~a~^~%~}" tokens))))
                  (user-quit 0))
                 (t
                  (format t "Compiling file ~A.~%" file)

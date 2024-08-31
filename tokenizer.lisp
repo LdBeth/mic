@@ -65,6 +65,21 @@
            (make-array 640 :adjustable t
                            :initial-element nil :fill-pointer 0))))
 
+(defmethod format-parse-state (stream (state parse-state) c a)
+  (declare (ignore c a))
+  (let ((p (make-pos state)))
+  (format stream "~S at line ~D, column ~D"
+          (parse-buffer state)
+          (cdr p) (car p))))
+
+(define-condition lexing-error (error)
+  ((parse-state :initarg :state)
+   (error-message :initarg :message))
+  (:report (lambda (c s)
+             (format s "~/format-parse-state/ is not ~A."
+                     (slot-value c 'parse-state)
+                     (slot-value c 'error-message)))))
+
 ;; redefine standard `read-char' function.
 (defun read-char (stream &optional (eof-error-p t) eof-value)
   (declare (special *state*))
@@ -162,7 +177,8 @@
                                       :pos pos)))
      (let ((w (match +c-identifier+ buffer)))
        (and w (make-instance 'identifier :content w :pos pos)))
-     (error "~S is not a valid identifier or keyword." buffer))))
+     (error 'lexing-error :message "a valid identifier or keyword"
+                          :state *state*))))
 
 (defun read-number (*state* stream)
   "Handles identifier or keywords. So far only decimal and octal number
@@ -179,7 +195,8 @@ planned."
      (let ((w (match +c-octal-integer+ buffer)))
        (and w (make-instance 'constant :content w :type 'octal
                              :pos pos)))
-     (error "~S is not a valid number." buffer))))
+     (error 'lexing-error :message "a valid number"
+                          :state *state*))))
 
 (defconstant +c-2-punctuator+
   (re:compile-re
@@ -248,7 +265,8 @@ not be ignored by the parser."
                     (read-comment buffer stream nil))))
        (and w (make-instance 'preprocessor :content w :pos pos)))
      ;; other cases
-     (error "~S is not a valid punctuator." buffer))))
+     (error 'lexing-error :message "a valid punctuator"
+                          :state *state*))))
 
 (defun tokenizer (stream)
   "Tokenize text from a input stream."
