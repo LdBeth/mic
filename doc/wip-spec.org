@@ -15,13 +15,15 @@ convention.
 - All keywords from ISO C99
 - C99 decimal and octal integers
 - C99 identifiers
-- All C99 punctuactors except =##= and =%:%:=
+- All C99 punctuactors except =##= and =%:%:=, they are
+  only used in preprocessor.
 - =/* */= and =//= comment
 
 ** Planned but not implemented
 
 At current stage, these can result in unexpected error
-been reported while lexing.
+been reported while lexing. There might be a chance they get
+implemented when parser has been started, or maybe not.
 
 - Strings and character literals
 - Token =...=
@@ -37,6 +39,9 @@ character.
 
 Tokens are optionally separated by one or more whitespaces.
 
+Identifiers, keywords, or constants must be delimited by whitespaces,
+comments or punctuators.
+
 #+BEGIN_SRC
   token:
     keyword
@@ -49,6 +54,9 @@ Tokens are optionally separated by one or more whitespaces.
     space
     tab
     newline
+  space:   '\s'
+  tab:     '\t'
+  newline: '\n'
 #+END_SRC
 
 *** Keywords
@@ -107,6 +115,10 @@ They are:
   digit: one of
     '0' '1' '2' '3' '4' '5' '6' '7' '8' '9'
 #+END_SRC
+
+*** Constant
+
+
 
 *** Comment syntax and Preprocessor instructions
 

@@ -35,16 +35,19 @@
                 :reader token-content)))
 
 (defmethod print-object ((obj comment) stream)
-  (let ((s (token-content obj)))
-    (format stream "#<comment \"~A\" at ~S>"
-            (if (> (length s) 10)
-                (format nil "~A...~A" (subseq s 0 4) (subseq s (- (length s) 4)))
+  (let* ((s (token-content obj))
+         (is-long (> (length s) 10)))
+    (format stream "#<comment \"~:[~A~*~;~A...~A~]\" at ~S>"
+            is-long
+            (if is-long
+                (subseq s 0 4)
                 s)
+            (if is-long (subseq s (- (length s) 4)))
             (token-position obj))))
 
 (defmethod print-object ((obj preprocessor) stream)
   (let ((s (token-content obj)))
-    (format stream "#<pp ~:[\"~A\"~;\"~A...\"~] at ~S>"
+    (format stream "#<pp \"~:[~A~;~A...~]\" at ~S>"
             (> (length s) 5) (subseq s 0 (min (length s) 5)) (token-position obj))))
 
 (defclass parse-state ()
