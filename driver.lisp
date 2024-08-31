@@ -34,9 +34,12 @@
               (cond
                 (lexing
                  (format *standard-output* "Lexing file ~A.~%" file)
+                 (with-open-file (f file :direction :input)
+                   (let ((tokens (mic:tokenizer f)))
+                     (format t "~{~a~^~%~}" tokens)))
                  (user-quit 0))
                 (t
-                 (format *standard-output* "Compiling file ~A.~%" file)
+                 (format t "Compiling file ~A.~%" file)
                  (user-quit 0)))))))
   (format *error-output* "No input file.~%")
   (user-quit -2))
