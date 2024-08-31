@@ -15,14 +15,15 @@
           :reader token-content)))
 
 (defclass identifier (token)
-  ((string :initarg :content :type string
-           :reader token-content)))
+  ((id :initarg :content :type string
+       :reader token-content)))
 (defclass constant (token)
   ((value :initarg :content :type string
           :reader token-content)
    (type :initarg :type :type symbol)))
 (defclass string-literal (token)
-  ())
+  ((string :initarg :content :type string
+           :reader token-content)))
 (defclass punctuator (token)
   ((punct :initarg :content :type symbol
           :reader token-content)))
@@ -76,7 +77,7 @@
   ((parse-state :initarg :state)
    (error-message :initarg :message))
   (:report (lambda (c s)
-             (format s "~/format-parse-state/ is not ~A."
+             (format s "~/mic::format-parse-state/ is not ~A."
                      (slot-value c 'parse-state)
                      (slot-value c 'error-message)))))
 
@@ -139,6 +140,14 @@
 (defconstant +c-octal-integer+
   (re:compile-re "0[0-7]*"))
 
+(defconstant +c-string+
+  (re:compile-re "\"([^\"\\
+]|\\['\"?\\abfnrtv])*\""))
+
+(defconstant +c-char-literal+
+  (re:compile-re "'([^'\\
+]|\\['\"?\\abfnrtv])*'"))
+
 (defun match (re string)
   "if the string matches a regex, return the matched string."
   (let ((m (re:match-re re string :exact t)))
@@ -196,6 +205,32 @@ planned."
        (and w (make-instance 'constant :content w :type 'octal
                              :pos pos)))
      (error 'lexing-error :message "a valid number"
+                          :state *state*))))
+
+(defun read-whole-string (buffer stream)
+  (let ((e (read-char stream))
+        c)
+    (vector-push e buffer)
+    (loop always (setf c (read-char stream nil nil))
+          do (vector-push-extend c buffer)
+          until (and (not (eql c #\\))
+                     (eql (peek-char nil stream t) e))
+          finally (vector-push-extend (read-char stream) buffer))))
+
+(defun read-string (*state* stream)
+  "Handles string or charachter literals."
+  (declare (special *state*))
+  (let ((buffer (parse-buffer *state*))
+        (pos (make-pos *state*)))
+    (setf (fill-pointer buffer) 0)
+    (read-whole-string buffer stream)
+    (or
+     (let ((w (match +c-string+ buffer)))
+       (and w (make-instance 'string-literal :content w :pos pos)))
+     (let ((w (match +c-char-literal+ buffer)))
+       (and w (make-instance 'constant :content w :type 'char
+                             :pos pos)))
+     (error 'lexing-error :message "a valid string or character literal"
                           :state *state*))))
 
 (defconstant +c-2-punctuator+

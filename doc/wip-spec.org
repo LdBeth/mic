@@ -30,6 +30,12 @@ implemented when parser has been started, or maybe not.
 
 TBD
 
+** Differences to ISO C99
+
+The parsing does not adhere to C99 specification when it comes to how
+comment and preprocessing instructions are handled. In fact,
+this compiler does not attempt to expand C macros.
+
 * Specification
 
 ** Lexical Elements
@@ -42,7 +48,7 @@ Tokens are optionally separated by one or more whitespaces.
 Identifiers, keywords, or constants must be delimited by whitespaces,
 comments or punctuators.
 
-#+BEGIN_SRC
+#+BEGIN_EXAMPLE
   token:
     keyword
     identifier
@@ -57,7 +63,7 @@ comments or punctuators.
   space:   '\s'
   tab:     '\t'
   newline: '\n'
-#+END_SRC
+#+END_EXAMPLE
 
 *** Keywords
 
@@ -102,7 +108,7 @@ They are:
 
 *** Identifier
 
-#+BEGIN_SRC
+#+BEGIN_EXAMPLE
   identifier:
     nondigit
     identifier nondigit
@@ -114,15 +120,36 @@ They are:
     'q' 'r' 's' 't' 'u' 'v' 'w' 'x' 'y' 'z'
   digit: one of
     '0' '1' '2' '3' '4' '5' '6' '7' '8' '9'
-#+END_SRC
+#+END_EXAMPLE
 
 *** Constant
 
+#+BEGIN_EXAMPLE
+  constant:
+    integer-constant
+#+END_EXAMPLE
 
+**** Integers
+
+#+BEGIN_EXAMPLE
+  integer-constant:
+    decimal-constant integer-suffix?
+    octal-constant integer-suffix?
+  decimal-constant:
+    nonzero-digit
+    decimal-constant digit
+  octal-constant:
+    '0'
+    octal-constant octal-digit
+  nonzero-digit: one of
+    '1' '2' '3' '4' '5' '6' '7' '8' '9'
+  octal-digit: one of
+    '0' '1' '2' '3' '4' '5' '6' '7'
+#+END_EXAMPLE
 
 *** Comment syntax and Preprocessor instructions
 
-#+BEGIN_SRC
+#+BEGIN_EXAMPLE
   comment:
     multiline-comment
     singleline-comment
@@ -134,7 +161,7 @@ They are:
   preprocessor-instruction:
     '#' [ "text that does not contain '\n'" '\\' '\n' ]*
           "text that does not contain '\n'" '\n'
-#+END_SRC
+#+END_EXAMPLE
 
 A multi-line comment starts with =/*= and can contain any character
 sequences except the ending sequence, and ends with =*/=.
@@ -144,3 +171,10 @@ that is not prefixed by the line continuation character =\=.
 
 Preprocessor instructions is similar to single line comment
 except starts with =#=.
+
+Note that the example below is a valid comment in C99 but not accepted
+by the above grammar.
+#+BEGIN_SRC C
+/\
+/ foo
+#+END_SRC
