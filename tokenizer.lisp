@@ -23,7 +23,7 @@
    (type :initarg :type :type symbol)))
 (defclass string-literal (token)
   ())
-(defclass punctuactor (token)
+(defclass punctuator (token)
   ((punct :initarg :content :type symbol
           :reader token-content)))
 (defclass comment (token)
@@ -100,7 +100,7 @@
                      ((or (eql #\" char) (eql #\' char))
                       #'read-string)
                      (t
-                      #'read-punctuactor))
+                      #'read-punctuator))
                *state* stream))))
 
 (defconstant +c-keywords+
@@ -133,14 +133,14 @@
   "if the string matches a C keyword, return the keyword."
   (re:match-string (re:match-re +c-keywords+ string :exact t)))
 
-(defun punctuactorp (char)
+(defun punctuatorp (char)
   (find char "[](){}.+-&*+-~!/%<>=^?:;|,#"))
 
-(defun read-till-punctuactor (buffer stream)
+(defun read-till-punctuator (buffer stream)
   "Handles both identifier or numbers."
   (loop never (let ((c (peek-char nil stream nil nil)))
                 (or (whitespacep c)
-                    (punctuactorp c)
+                    (punctuatorp c)
                     (null c)))
         do (vector-push-extend (read-char stream) buffer)))
 
@@ -155,7 +155,7 @@
         (pos (make-pos *state*)))
     ;; clear buffer
     (setf (fill-pointer buffer) 0)
-    (read-till-punctuactor buffer stream)
+    (read-till-punctuator buffer stream)
     (or
      (let ((w (match +c-keywords+ buffer)))
        (and w (make-instance 'keyword :content (intern w '#:mic-symbols)
@@ -171,7 +171,7 @@ planned."
   (let ((buffer (parse-buffer *state*))
         (pos (make-pos *state*)))
     (setf (fill-pointer buffer) 0)
-    (read-till-punctuactor buffer stream)
+    (read-till-punctuator buffer stream)
     (or
      (let ((w (match +c-decimal-integer+ buffer)))
        (and w (make-instance 'constant :content w :type 'decimal
@@ -215,7 +215,7 @@ planned."
                          (eql (peek-char nil stream t) #\newline))))
     (copy-seq buffer)))
 
-(defun read-punctuactor (*state* stream)
+(defun read-punctuator (*state* stream)
   "Read punctuators. This also handles comment, which would
 not be ignored by the parser."
   (declare (special *state*))
@@ -224,7 +224,7 @@ not be ignored by the parser."
     (setf (fill-pointer buffer) 0)
     (vector-push (read-char stream) buffer)
     (let ((c (peek-char nil stream nil nil)))
-      (when (punctuactorp c)
+      (when (punctuatorp c)
         (vector-push c buffer)))
     (unless (and
              (> (length buffer) 1)
@@ -234,7 +234,7 @@ not be ignored by the parser."
     (or
      (let ((m (find buffer +c-operators+ :test #'string=)))
        (and m
-            (make-instance 'punctuactor :content (intern m '#:mic-symbols)
+            (make-instance 'punctuator :content (intern m '#:mic-symbols)
                                         :pos pos)))
      ;; comment
      (let* ((m (match +c-comment-begin+ buffer))
@@ -248,7 +248,7 @@ not be ignored by the parser."
                     (read-comment buffer stream nil))))
        (and w (make-instance 'preprocessor :content w :pos pos)))
      ;; other cases
-     (error "~S is not a valid punctuactor." buffer))))
+     (error "~S is not a valid punctuator." buffer))))
 
 (defun tokenizer (stream)
   "Tokenize text from a input stream."
