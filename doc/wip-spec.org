@@ -36,6 +36,17 @@ The parsing does not adhere to C99 specification when it comes to how
 comment and preprocessing instructions are handled. In fact,
 this compiler does not attempt to expand C macros.
 
+*** C99 features intentionally not supported
+
+- Trigraph. They are cause trouble and even disabled by default in
+  modern compilers.
+- =\= follow by newline. It has little use outside defining
+  C macros, thus only partially supported in macro instructions
+  and single line comments.
+- =L= prefix to string and character literals. It adds complexity
+  to tokenization, and the compiler does not plan to support
+  width char.
+
 * Specification
 
 ** Lexical Elements
@@ -127,6 +138,8 @@ They are:
 #+BEGIN_EXAMPLE
   constant:
     integer-constant
+    character-constant
+    string-constant
 #+END_EXAMPLE
 
 **** Integers
@@ -147,6 +160,10 @@ They are:
     '0' '1' '2' '3' '4' '5' '6' '7'
 #+END_EXAMPLE
 
+Obviously, =0= is an octal constant.
+
+**** Character literal
+
 *** Comment syntax and Preprocessor instructions
 
 #+BEGIN_EXAMPLE
@@ -157,10 +174,10 @@ They are:
     '/*' "text that does not contain '*/'" '*/'
   singleline-comment:
     '//' [ "text that does not contain '\n'" '\\' '\n' ]*
-           "text that does not contain '\n'" '\n'
+           "text that does not contain '\n'"? '\n'
   preprocessor-instruction:
     '#' [ "text that does not contain '\n'" '\\' '\n' ]*
-          "text that does not contain '\n'" '\n'
+          "text that does not contain '\n'"? '\n'
 #+END_EXAMPLE
 
 A multi-line comment starts with =/*= and can contain any character
