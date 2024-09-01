@@ -66,20 +66,22 @@
            (make-array 640 :adjustable t
                            :initial-element nil :fill-pointer 0))))
 
-(defmethod format-parse-state (stream (state parse-state) c a)
-  (declare (ignore c a))
-  (let ((p (make-pos state)))
-  (format stream "~S at line ~D, column ~D"
-          (parse-buffer state)
-          (cdr p) (car p))))
-
 (define-condition lexing-error (error)
   ((parse-state :initarg :state)
-   (error-message :initarg :message))
-  (:report (lambda (c s)
-             (format s "~/mic::format-parse-state/ is not ~A."
-                     (slot-value c 'parse-state)
-                     (slot-value c 'error-message)))))
+   (error-message :initarg :message)
+   (pos :initarg :pos))
+  (:report (lambda (c stream)
+             (let* ((state (slot-value c 'parse-state))
+                    (buffer (parse-buffer state)))
+             (format stream "Error: Starting at line ~D, column ~D, ~%~
+input buffer:~%--~%~A~%--~%~
+current position at line ~D, column ~D: ~A."
+                     (cdr (slot-value c 'pos))
+                     (car (slot-value c 'pos))
+                     buffer
+                     (slot-value state 'row)
+                     (slot-value state 'col)
+                     (slot-value c 'error-message))))))
 
 ;; redefine standard `read-char' function.
 (defun read-char (stream &optional (eof-error-p t) eof-value)
@@ -103,11 +105,12 @@
 (defun get-a-token (*state* stream)
   "Return nil if reach end of file."
   (declare (special *state*))
-  (let (char)
-    ;; skip whitespace
-    (loop while (whitespacep (peek-char nil stream nil nil))
-          do (read-char stream))
-    (setf char (peek-char nil stream nil nil))
+  ;; skip whitespace
+  (loop while (whitespacep (peek-char nil stream nil nil))
+        do (read-char stream))
+  (let ((*pos* (make-pos *state*))
+        (char (peek-char nil stream nil nil)))
+    (declare (special *pos*))
     (when char
       (funcall (cond ((cl:alpha-char-p char)
                       #'read-identifier)
@@ -174,64 +177,68 @@
 
 (defun read-identifier (*state* stream)
   "Handles identifier or keywords"
-  (declare (special *state*))
-  (let ((buffer (parse-buffer *state*))
-        (pos (make-pos *state*)))
+  (declare (special *state* *pos*))
+  (let ((buffer (parse-buffer *state*)))
     ;; clear buffer
     (setf (fill-pointer buffer) 0)
     (read-till-punctuator buffer stream)
     (or
      (let ((w (match +c-keywords+ buffer)))
        (and w (make-instance 'keyword :content (intern w '#:mic-symbols)
-                                      :pos pos)))
+                                      :pos *pos*)))
      (let ((w (match +c-identifier+ buffer)))
-       (and w (make-instance 'identifier :content w :pos pos)))
-     (error 'lexing-error :message "a valid identifier or keyword"
-                          :state *state*))))
+       (and w (make-instance 'identifier :content w :pos *pos*)))
+     (error 'lexing-error :message "is not a valid identifier or keyword"
+                          :state *state*
+                          :pos *pos*))))
 
 (defun read-number (*state* stream)
   "Handles identifier or keywords. So far only decimal and octal number
 planned."
-  (declare (special *state*))
-  (let ((buffer (parse-buffer *state*))
-        (pos (make-pos *state*)))
+  (declare (special *state* *pos*))
+  (let ((buffer (parse-buffer *state*)))
     (setf (fill-pointer buffer) 0)
     (read-till-punctuator buffer stream)
     (or
      (let ((w (match +c-decimal-integer+ buffer)))
        (and w (make-instance 'constant :content w :type 'decimal
-                             :pos pos)))
+                             :pos *pos*)))
      (let ((w (match +c-octal-integer+ buffer)))
        (and w (make-instance 'constant :content w :type 'octal
-                             :pos pos)))
-     (error 'lexing-error :message "a valid number"
-                          :state *state*))))
+                             :pos *pos*)))
+     (error 'lexing-error :message "is no a valid number"
+                          :state *state* :pos *pos*))))
 
 (defun read-whole-string (buffer stream)
+  (declare (special *state* *pos*))
   (let ((e (read-char stream))
         c)
     (vector-push e buffer)
-    (loop always (setf c (read-char stream nil nil))
-          do (vector-push-extend c buffer)
-          until (and (not (eql c #\\))
-                     (eql (peek-char nil stream t) e))
-          finally (vector-push-extend (read-char stream) buffer))))
+    (handler-bind ((end-of-file (lambda (condition)
+                                  (declare (ignore condition))
+                                  (error 'lexing-error :message
+                                         (format nil "expect end of string character: ~:C" c)
+                                                       :state *state* :pos *pos*))))
+      (loop always (setf c (read-char stream nil nil))
+            do (vector-push-extend c buffer)
+            until (and (not (eql c #\\))
+                       (eql (peek-char nil stream t) e))
+            finally (vector-push-extend (read-char stream) buffer)))))
 
 (defun read-string (*state* stream)
   "Handles string or charachter literals."
-  (declare (special *state*))
-  (let ((buffer (parse-buffer *state*))
-        (pos (make-pos *state*)))
+  (declare (special *state* *pos*))
+  (let ((buffer (parse-buffer *state*)))
     (setf (fill-pointer buffer) 0)
     (read-whole-string buffer stream)
     (or
      (let ((w (match +c-string+ buffer)))
-       (and w (make-instance 'string-literal :content w :pos pos)))
+       (and w (make-instance 'string-literal :content w :pos *pos*)))
      (let ((w (match +c-char-literal+ buffer)))
        (and w (make-instance 'constant :content w :type 'char
-                             :pos pos)))
-     (error 'lexing-error :message "a valid string or character literal"
-                          :state *state*))))
+                             :pos *pos*)))
+     (error 'lexing-error :message "is not a valid string or character literal"
+                          :state *state* :pos *pos*))))
 
 (defconstant +c-2-punctuator+
   (re:compile-re
@@ -250,17 +257,22 @@ planned."
   (re:compile-re "#|%%:"))
 
 (defun read-comment (buffer stream is-block)
+  (declare (special *state* *pos*))
   ;; Clear buffer first
   (setf (fill-pointer buffer) 0)
   (let (c)
     (if is-block
-        (loop while (progn
-                      (setf c (read-char stream nil nil))
-                      (and c
-                          (not (and (eql c #\*)
-                                    (eql (peek-char nil stream t) #\/)))))
-              do (vector-push-extend c buffer)
-              finally (read-char stream))
+        (handler-bind ((end-of-file (lambda (condition)
+                                  (declare (ignore condition))
+                                  (error 'lexing-error :message "expect end of comment"
+                                                       :state *state* :pos *pos*))))
+          (loop while (progn
+                        (setf c (read-char stream nil nil))
+                        (and c
+                             (not (and (eql c #\*)
+                                       (eql (peek-char nil stream t) #\/)))))
+                do (vector-push-extend c buffer)
+                finally (read-char stream)))
         (loop always (setf c (read-char stream nil nil))
               do (vector-push-extend c buffer)
               until (and (not (eql c #\\))
@@ -270,9 +282,8 @@ planned."
 (defun read-punctuator (*state* stream)
   "Read punctuators. This also handles comment, which would
 not be ignored by the parser."
-  (declare (special *state*))
-  (let ((buffer (parse-buffer *state*))
-        (pos (make-pos *state*)))
+  (declare (special *state* *pos*))
+  (let ((buffer (parse-buffer *state*)))
     (setf (fill-pointer buffer) 0)
     (vector-push (read-char stream) buffer)
     (let ((c (peek-char nil stream nil nil)))
@@ -287,21 +298,25 @@ not be ignored by the parser."
      (let ((m (find buffer +c-operators+ :test #'string=)))
        (and m
             (make-instance 'punctuator :content (intern m '#:mic-symbols)
-                                        :pos pos)))
+                                       :pos *pos*)))
      ;; comment
      (let* ((m (match +c-comment-begin+ buffer))
             (block-p (string= "/*" m))
             (w (and m
                     (read-comment buffer stream block-p))))
-       (and w (make-instance 'comment :content w :pos pos :block-p block-p)))
+       (and w (make-instance 'comment
+                             :content w
+                             :pos *pos* :block-p block-p)))
      ;; preprocessor instructions
      (let* ((m (match +c-macro-begin+ buffer))
             (w (and m
                     (read-comment buffer stream nil))))
-       (and w (make-instance 'preprocessor :content w :pos pos)))
+       (and w (make-instance 'preprocessor
+                             :content w
+                             :pos *pos*)))
      ;; other cases
-     (error 'lexing-error :message "a valid punctuator"
-                          :state *state*))))
+     (error 'lexing-error :message "is not a valid punctuator"
+                          :state *state* :pos *pos*))))
 
 (defun tokenizer (stream)
   "Tokenize text from a input stream."
