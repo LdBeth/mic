@@ -141,7 +141,10 @@ current position at line ~D, column ~D: ~A."
 
 ;; The way ISO C99 intended
 (defconstant +c-octal-integer+
-  (re:compile-re "0[0-7]*"))
+  (re:compile-re "0[0-7]*(?[uUlL]|ll|LL)?"))
+
+(defconstant +c-hexal-integer+
+  (re:compile-re "0[xX]*[0-9a-fA-F]+(?[uUlL]|ll|LL)?"))
 
 (defconstant +c-string+
   (re:compile-re "\"([^\"\\
@@ -206,6 +209,9 @@ planned."
      (let ((w (match +c-octal-integer+ buffer)))
        (and w (make-instance 'constant :content w :type 'octal
                              :pos *pos*)))
+     (let ((w (match +c-hexal-integer+ buffer)))
+       (and w (make-instance 'constant :content w :type 'hexadecimal
+                             :pos *pos*)))
      (error 'lexing-error :message "is no a valid number"
                           :state *state* :pos *pos*))))
 
@@ -242,7 +248,7 @@ planned."
 
 (defconstant +c-2-punctuator+
   (re:compile-re
-   "!=|%%[:=>]|&[&=]|%*=|%+[+=]|%-[=-]|/[/*=]|:>|<[%%:<=]|==|>[=>]|^=|%|[=|]"))
+   "!=|%%[:=>]|&[&=]|%*=|%+[+=]|%-[=->]|/[/*=]|:>|<[%%:<=]|==|>[=>]|^=|%|[=|]"))
 
 (defconstant +c-operators+
   '("[" "]" "(" ")" "{" "}" "." "->" "++" "--" "&" "*" "+" "-" "~" "!"
