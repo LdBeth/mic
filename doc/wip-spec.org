@@ -57,7 +57,7 @@ character.
 Tokens are optionally separated by one or more whitespaces.
 
 Identifiers, keywords, or constants must be delimited by whitespaces,
-comments or punctuators.
+comments, strings or punctuators.
 
 #+BEGIN_EXAMPLE
   token:
@@ -163,6 +163,30 @@ They are:
 Obviously, =0= is an octal constant.
 
 **** Character literal
+
+#+BEGIN_EXAMPLE
+  character-constant:
+    '\'' c-char* '\''
+  c-char:
+    "any character except '\'', '\\', or '\n'"
+    escape-sequence
+  escape-sequence: one of
+    '\\\'' '\\\"' '\\?' '\\\\' '\\a' '\\b'
+    '\\f' '\\n' '\\r' '\\t' '\\v'
+#+END_EXAMPLE
+
+**** String literal
+
+#+BEGIN_EXAMPLE
+  string-literal:
+    '"' s-char* '"'
+  s-char:
+    "any character except '"', '\\', or '\n'"
+    escape-sequence
+  escape-sequence: one of
+    '\\\'' '\\\"' '\\?' '\\\\' '\\a' '\\b'
+    '\\f' '\\n' '\\r' '\\t' '\\v'
+#+END_EXAMPLE
 
 *** Comment syntax and Preprocessor instructions
 

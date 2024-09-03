@@ -273,10 +273,14 @@ planned."
                                        (eql (peek-char nil stream t) #\/)))))
                 do (vector-push-extend c buffer)
                 finally (read-char stream)))
-        (loop always (setf c (read-char stream nil nil))
-              do (vector-push-extend c buffer)
-              until (and (not (eql c #\\))
-                         (eql (peek-char nil stream t) #\newline))))
+        (handler-bind ((end-of-file (lambda (condition)
+                                  (declare (ignore condition))
+                                  (error 'lexing-error :message "expect newline"
+                                                       :state *state* :pos *pos*))))
+          (loop always (setf c (read-char stream nil nil))
+                do (vector-push-extend c buffer)
+                until (and (not (eql c #\\))
+                           (eql (peek-char nil stream t) #\newline)))))
     (copy-seq buffer)))
 
 (defun read-punctuator (*state* stream)
