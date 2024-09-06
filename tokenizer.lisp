@@ -49,7 +49,8 @@
 (defmethod print-object ((obj preprocessor) stream)
   (let ((s (token-content obj)))
     (format stream "#<pp ~:[~S~;~S ...~] at ~S>"
-            (> (length s) 5) (subseq s 0 (min (length s) 5)) (token-position obj))))
+            (> (length s) 5) (subseq s 0 (min (length s) 5))
+            (token-position obj))))
 
 (defclass parse-state ()
   ((pos :initform 0 :type integer)
@@ -64,7 +65,8 @@
            parse-buffer)
    (tokens :initform
            (make-array 640 :adjustable t
-                           :initial-element nil :fill-pointer 0))))
+                           :initial-element nil :fill-pointer 0)
+           :reader token-list)))
 
 (define-condition lexing-error (error)
   ((parse-state :initarg :state)
@@ -97,6 +99,11 @@ current position at line ~D, column ~D: ~A."
             (incf col))))
     c))
 
+#| Planned gray stream
+(defclass c-input-stream (gray:fundamental-character-stream)
+  ())
+|#
+
 (defun whitespacep (char)
   (or (eql char #\space)
       (eql char #\tab)
@@ -112,15 +119,17 @@ current position at line ~D, column ~D: ~A."
         (char (peek-char nil stream nil nil)))
     (declare (special *pos*))
     (when char
-      (funcall (cond ((cl:alpha-char-p char)
-                      #'read-identifier)
-                     ((cl:digit-char-p char)
-                      #'read-number)
-                     ((or (eql #\" char) (eql #\' char))
-                      #'read-string)
-                     (t
-                      #'read-punctuator))
-               *state* stream))))
+      (vector-push-extend
+       (funcall (cond ((cl:alpha-char-p char)
+                       #'read-identifier)
+                      ((cl:digit-char-p char)
+                       #'read-number)
+                      ((or (eql #\" char) (eql #\' char))
+                       #'read-string)
+                      (t
+                       #'read-punctuator))
+                *state* stream)
+       (token-list *state*)))))
 
 (defconstant +c-keywords+
   (re:compile-re
@@ -332,6 +341,6 @@ not be ignored by the parser."
   "Tokenize text from a input stream."
   (let ((state (make-instance 'parse-state))
         token)
-    (loop while (setf token (get-a-token state stream))
-          collect token)))
+    (loop while (get-a-token state stream))
+    (token-list state)))
 

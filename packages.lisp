@@ -6,3 +6,8 @@
 
 (defpackage #:org.sdf.ldbeth.minimal.intercal.c.symbols
   (:nicknames #:mic-symbols))
+
+(defpackage #:org.sdf.ldbeth.minimal.intercal.c.parsec
+  (:nicknames #:mic-pc)
+  (:use #:common-lisp #:maxpc))
+

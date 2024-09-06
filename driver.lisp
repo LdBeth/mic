@@ -41,7 +41,7 @@
                                          (format *error-output* "Uncaught error: ~A~&" condition))))
                      (with-open-file (f file :direction :input)
                        (let ((tokens (mic:tokenizer f)))
-                         (format t "~{~a~^~%~}" tokens))))
+                         (format t "~{~a~^~%~}" (coerce tokens 'list)))))
                  (user-quit 0))
                 (t
                  (format t "Compiling file ~A.~%" file)

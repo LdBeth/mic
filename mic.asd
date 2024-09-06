@@ -1,4 +1,5 @@
 (asdf:defsystem "mic"
-  :depends-on ("re")
+  :depends-on ("re" "maxpc")
   :components ((:file "packages")
-               (:file "tokenizer" :depends-on ("packages"))))
+               (:file "tokenizer" :depends-on ("packages"))
+               (:file "parser" :depends-on ("packages"))))
