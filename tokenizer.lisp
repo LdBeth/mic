@@ -339,8 +339,7 @@ not be ignored by the parser."
 
 (defun tokenizer (stream)
   "Tokenize text from a input stream."
-  (let ((state (make-instance 'parse-state))
-        token)
+  (let ((state (make-instance 'parse-state)))
     (loop while (get-a-token state stream))
     (token-list state)))
 
