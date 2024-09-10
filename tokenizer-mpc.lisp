@@ -8,11 +8,14 @@
                 (find c "'\"?\\abfnrtv" :test #'char-equal))))
 
 (defun =c-string ()
-  (=destructure (_ s _)
+  (=destructure
+      (_ s _)
       (=list (?eq #\")
-             (=subseq (%some (%or (?string-chars)
-                                  (?seq (?eq #\\)
-                                        (?escape-sequence-char)))))
-             (?eq #\"))))
+             (=subseq (%some
+                       (%or (?string-chars)
+                            (?seq (?eq #\\)
+                                  (?escape-sequence-char)))))
+             (?eq #\"))
+    (list s))))
 
-(parse "\"abcds\\n\"" (=c-string))
+(parse "\"abc\\r\\t'ds\\n\"" (=c-string))
