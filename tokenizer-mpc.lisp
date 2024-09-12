@@ -16,6 +16,6 @@
                             (?seq (?eq #\\)
                                   (?escape-sequence-char)))))
              (?eq #\"))
-    (list s))))
+    (list s)))
 
 (parse "\"abc\\r\\t'ds\\n\"" (=c-string))
