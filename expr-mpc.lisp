@@ -7,6 +7,13 @@
 (defun =value ()
   (%and (?value) (=element)))
 
+(defun =paren-expr ()
+  (=destructure (_ a _)
+                (=list (?eq '\() 'rec/=term (?eq '\)))))
+
+(defun =prime-expr ()
+  (%or (=value) (=paren-expr)))
+
 (defun =term ()
    (%or
     (=destructure (a op b)
@@ -18,9 +25,6 @@
       (list op a b))
     (=prime-expr)))
 
-(defun =prime-expr ()
-  (%or (=value) (=paren-expr)))
-
 (defun =expr ()
   ;; FIXME
   (=subseq
@@ -30,10 +34,6 @@
 
 (setf (fdefinition 'rec/=expr) (=expr))
 (setf (fdefinition 'rec/=term) (=term))
-
-(defun =paren-expr ()
-  (=destructure (_ a _)
-                (=list (?eq '\() 'rec/=term (?eq '\)))))
 
 ;;(parse '(2 * 1 * 2 * 3 / 3) (=term))
 
