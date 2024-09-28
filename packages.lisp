@@ -1,7 +1,8 @@
 (defpackage #:org.sdf.ldbeth.minimal.intercal.c
   (:nicknames #:mic)
   (:use #:common-lisp)
-  (:shadow #:keyword #:read-char)
+  (:shadow #:keyword #:read-char
+           #:intern #:type-of)
   (:export #:tokenizer #:lexing-error))
 
 (defpackage #:org.sdf.ldbeth.minimal.intercal.c.symbols
