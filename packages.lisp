@@ -11,7 +11,16 @@
 (defpackage #:org.sdf.ldbeth.minimal.intercal.c.ast
   (:nicknames #:mic-ast)
   (:use #:common-lisp)
+  (:shadow #:function) 
   (:export #:c-number #:c-array))
+
+(defpackage #:org.sdf.ldbeth.minimal.intercal.c.cst
+  (:nicknames #:mic-ast #:mic)
+  (:use #:common-lisp)
+  (:export #:cst
+           #:expression #:binary-application #:unary-application
+           #:type #:simple-type
+           #:statement))
 
 (defpackage #:org.sdf.ldbeth.minimal.intercal.c.parsec
   (:nicknames #:mic-pc)
