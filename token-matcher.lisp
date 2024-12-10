@@ -1,14 +1,21 @@
 (in-package #:mic-pc)
 
+(defmacro token-test (arg type &body body)
+  `(lambda (,arg)
+     (and (typep ,arg type)
+          (progn
+            ,@body))))
+
 (defun ?keyword (keyword)
   "Matches if the token represents the keyword."
-  (?fail))
+  (?satisfies (token-test o 'mic:keyword
+                (eq (mic:token-content o) keyword))))
 
 (defun ?identifier ()
-  (?fail))
+  (?satisfies (token-test o 'mic:keyword)))
 
 (defun ?constant ()
-  (?fail))
+  (?satisfies (token-test o 'mic:constant)))
 
 (defun =identifier ()
   (%and (?identifier)

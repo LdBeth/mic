@@ -35,6 +35,16 @@
   ((instruction :initarg :content :type string
                 :reader token-content)))
 
+;; Convert token to lisp data types
+(defgeneric token-data (token)
+  (:documentation "Retrive data of token.")
+  (:method (token)
+    (error "Retrive data method not defined for ~S" token)))
+
+(defmethod token-data ((token keyword))
+  (token-content token))
+
+
 (defmethod print-object ((obj comment) stream)
   (let* ((s (token-content obj))
          (is-long (> (length s) 10)))
@@ -342,4 +352,3 @@ not be ignored by the parser."
   (let ((state (make-instance 'parse-state)))
     (loop while (get-a-token state stream))
     (token-list state)))
-

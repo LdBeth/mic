@@ -14,15 +14,15 @@
   ((operator :initarg :op :type symbol)))
 
 (defclass binary-application (expression operator-mixin)
-   (arg1 :initarg :left :type expression)
-   (arg2 :initarg :right :type expression))
+   ((arg1 :initarg :left :type expression)
+    (arg2 :initarg :right :type expression)))
 
 (defclass unary-application (expression operator-mixin)
-  (arg :initarg :arg :type expression))
+  ((arg :initarg :arg :type expression)))
 
 (defclass function-application (expression)
   ((function-name :initarg :function :type identifier)
-   (arglist :initarg :args :type (list expression))))
+   (arglist :initarg :args :type cons)))
 
 (defclass type (cst)
   ())
