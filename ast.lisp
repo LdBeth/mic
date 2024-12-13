@@ -95,8 +95,36 @@
               ,(ref (third (second line)) vars))
              (go ,(mic-lex:token-content (second (third line))))))))
 
-;; Constant folding on arith expresions and compare expression
+;; Dead variable elimination
 (defun pass-2 (progm)
+  (let ((table (make-array (fourth progm) :initial-element nil)))
+    (loop for fn in (third progm)
+          do (loop for i in (cddr fn)
+                   do (mapc (lambda (x)
+                              (if (and (stringp x)
+                                       (eql (aref x 0) #\G))
+                                  (setf (aref table
+                                              (parse-integer (subseq x 1)))
+                                        t)))
+                            (if (eq (car i) 'setq)
+                                (alexandria:flatten (cddr i))
+                                (alexandria:flatten i)))))
+
+    (let ((fns (third progm)))
+      (setf fns (mapcar (lambda (x)
+                          (remove-if (lambda (l)
+                                       (and (consp l)
+                                            (eq (car l) 'setq)
+                                            (not (aref table
+                                                       (parse-integer (subseq (cadr l) 1))))))
+                                     x))
+                        fns))
+      `(prog ,(second progm)
+          ,fns
+          ,(fourth progm)))))
+
+;; Constant folding on arith expresions and compare expression
+(defun pass-3 (progm)
   (let ((fns (third progm)))
     (setf fns (mapcar #'arith-opt fns))
     `(prog ,(second progm)
@@ -124,9 +152,9 @@
                      (otherwise line)))
                  (cddr fn))))
 
-;; The second pass expands expressions and
-;; the result is close to target asm 
-(defun pass-3 (progm)
+;; The next pass expands expressions and
+;; the result is close to target asm
+(defun pass-4 (progm)
   (let ((globals (second progm))
         (fns (third progm)))
     (setf fns (mapcar #'ssa fns))
@@ -173,14 +201,6 @@
                       (return (expand-exp* (second line))))))
                  (cddr fn))
          ))
-#|
-(defun pass-3 (progm)
-  (let ((table1 (make-array (fourth progm) :element-type 'boolean))
-        (table2 (make-array (fourth progm))))
-    (loop for fn in (third progm)
-          do (loop for i in (cddr fn)
-                   do (if (string= (car i) "mov"))))))
-|#                        
 
 ;; Final codegen pass
 (defun code-gen (ast)
@@ -202,6 +222,6 @@
               do (format t " pop G~A~%" i))))
   (loop for i in (cddr fn)
         do (if (eq (car i) 'labels)
-               (format t "~a:" (cadr i))
+               (format t "~a~%" (cadr i))
                (format t " ~a ~{~a~^, ~}~%" (car i) (cdr i))))
   (format t "~A endp~%" (car fn)))

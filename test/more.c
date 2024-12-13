@@ -2,7 +2,8 @@ int main(argc, argv)
      int argc;
      char **argv;
 {
-  char /**/a,b;
+  char /**/a,b,c;
+  c= a + 1;
   a = 0x0a + 1;
   b = 0;
  L1: b++;

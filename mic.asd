@@ -1,5 +1,5 @@
 (asdf:defsystem "mic"
-  :depends-on ("re" "maxpc")
+  :depends-on ("re" "maxpc" "alexandria")
   :components ((:file "packages")
                ;(:file "symbol-table" :depends-on ("packages"))
                (:file "tokenizer" :depends-on ("packages"))
