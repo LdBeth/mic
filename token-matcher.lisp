@@ -61,7 +61,7 @@
 
 (defun =declaration ()
   (=destructure (type star name _ expr _ )
-                (=list (=type) (%maybe (=star)) (=identifier) (?op '=) (=constant) (?op '\;))
+                (=list (=type) (%any (=star)) (=identifier) (?op '=) (=constant) (?op '\;))
     `(defvar ,(if star `(* ,type) type) ,name ,expr)))
 
 (defun =program ()
@@ -95,7 +95,7 @@
 
 (defun =var-decl ()
   (=destructure (type star name)
-                (=list (=type) (%maybe (=star)) (=varlist))
+                (=list (=type) (%any (=star)) (=varlist))
     `(defvar ,(if star `(* ,type) type) ,name)))
 
 (defun =assignment ()
@@ -167,7 +167,7 @@
 
 (defun =function ()
   (=destructure (type star name _ args _ _ _ body _)
-                (=list (=type) (%maybe (=star)) (=identifier)
+                (=list (=type) (%any (=star)) (=identifier)
                        (?op '\()
                        (%maybe (=varlist))
                        (?op '\))

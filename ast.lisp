@@ -143,6 +143,14 @@
                       (return (expand-exp* (second line))))))
                  (cddr fn))
          ))
+#|
+(defun pass-3 (progm)
+  (let ((table1 (make-array (fourth progm) :element-type 'boolean))
+        (table2 (make-array (fourth progm))))
+    (loop for fn in (third progm)
+          do (loop for i in (cddr fn)
+                   do (if (string= (car i) "mov"))))))
+|#                        
 
 ;; Final codegen pass
 (defun code-gen (ast)

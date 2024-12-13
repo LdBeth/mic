@@ -291,5 +291,15 @@ compare:
   atom '<' atom
   atom '>' atom
   atom '==' atom
+
+type:
+  'void'
+  'char'
+  'short'
+  'int'
+  'long'
+  'signed'
+  'unsigned'
+  type '*'
 #+END_EXAMPLE
 
