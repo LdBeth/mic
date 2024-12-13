@@ -95,7 +95,7 @@
               ,(ref (third (second line)) vars))
              (go ,(mic-lex:token-content (second (third line))))))))
 
-;; Dead variable elimination
+;; Eliminate assignment to unused variable
 (defun pass-2 (progm)
   (let ((table (make-array (fourth progm) :initial-element nil)))
     (loop for fn in (third progm)
@@ -121,7 +121,7 @@
                         fns))
       `(prog ,(second progm)
           ,fns
-          ,(fourth progm)))))
+          ,table))))
 
 ;; Constant folding on arith expresions and compare expression
 (defun pass-3 (progm)
@@ -157,7 +157,7 @@
 (defun pass-4 (progm)
   (let ((globals (second progm))
         (fns (third progm)))
-    (setf fns (mapcar #'ssa fns))
+    (setf fns (mapcar #'unexpr fns))
     `(prog ,globals
         ,fns
         ,(fourth progm))))
@@ -180,7 +180,7 @@
         ("ret"))
       `(("mov" "eax" ,exp) ("ret"))))
 
-(defun ssa (fn)
+(defun unexpr (fn)
   (list* (first fn)
          (second fn)
          (mapcan (lambda (line)
@@ -198,28 +198,63 @@
                       (go `(("jmp" ,(second line))))
                       (labels `((labels ,(second line))))
                       (setq (expand-exp (second line) (third line)))
-                      (return (expand-exp* (second line))))))
+                      (return (expand-exp* (second line)))
+                      (otherwise line))))
                  (cddr fn))
          ))
 
+;; Eliminate the dead code caused by forward unconditinal goto.
+(defun pass-5 (progm)
+  (let ((globals (second progm))
+        (fns (third progm)))
+    (setf fns (mapcar #'jmp-opt fns))
+    `(prog ,globals
+        ,fns
+        ,(fourth progm))))
+
+(defun jmp-opt (fn)
+  (let* ((body (cddr fn))
+         (rest body)
+         skip
+         acc)
+    (loop for line in body
+          do (progn
+               (setf rest (cdr rest))
+               (when (eq (car line) 'labels)
+                 (setq skip nil))
+               (when (string= (car line) "jmp")
+                 (when (find (list 'labels (cadr line)) rest :test #'equal)
+                   (setq skip t)
+                   (push line acc)))
+               (unless skip
+                 (push line acc))))
+    (setq body (nreverse acc))
+    (list* (first fn)
+           (second fn)
+           body)))
+
 ;; Final codegen pass
 (defun code-gen (ast)
-  (format t ".code~%")
-  (loop for f in (third ast)
-        do (assemble f))
-  (format t ".data~%")
-  (loop for p in (second ast)
-        do (format t "~A sdword ~S~%" (car p) (cdr p)))
-  (loop for i from 0 to (1- (fourth ast))
-        do (format t "G~A sdword ?~%" i))
-  (format t " end~%"))
+  (let ((g-table (fourth ast)))
+    (format t ".code~%")
+    (loop for f in (third ast)
+          do (assemble f g-table))
+    (format t ".data~%")
+    (loop for p in (second ast)
+          do (format t "~A sdword ~S~%" (car p) (cdr p)))
+    (loop for i from 0 to (1- (length g-table))
+          do (if (aref g-table i)
+                 (format t "G~A sdword ?~%" i)))
+    (format t " end~%")))
 
-(defun assemble (fn)
+(defun assemble (fn table)
   (format t "~A proc~%" (car fn))
   (let ((args (second fn)))
     (if (> (second args) 0)
         (loop for i from (car args) to (+ (car args) (cadr args) -1)
-              do (format t " pop G~A~%" i))))
+              do (if (aref table i)
+                     (format t " pop G~A~%" i)
+                     (format t " pop eax~%")))))
   (loop for i in (cddr fn)
         do (if (eq (car i) 'labels)
                (format t "~a~%" (cadr i))

@@ -83,6 +83,7 @@
                          (setf ast (mic-ast:pass-1 ast))
                          (setf ast (mic-ast:pass-2 ast))
                          (setf ast (mic-ast:pass-3 ast))
+                         (setf ast (mic-ast:pass-4 ast))
                          (mic-ast:code-gen ast))))
                  (user-quit 0)))))))
   (format *error-output* "No input file.~%")
