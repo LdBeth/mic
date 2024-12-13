@@ -250,7 +250,8 @@ statement:
   increment
   decrement
   assignment
-  computed-goto
+  coditional-goto
+  unconditional-goto
   label
 
 increment:
@@ -283,6 +284,9 @@ atom:
 
 computed-goto:
   'if' '(' compare ')' 'goto' identifier ';'
+
+unconditional-goto:
+  'goto' identifier ';'
 
 label:
   identifier ':'

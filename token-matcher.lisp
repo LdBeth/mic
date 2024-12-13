@@ -125,7 +125,13 @@
                        (?op '\))
                        (?keyword "goto")
                        (=identifier))
-    `(if (,op ,e1 ,e2) ,l)))
+                `(if (,op ,e1 ,e2) (go ,l))))
+
+(defun =goto ()
+  (=destructure (_ l)
+                (=list (?keyword "goto")
+                       (=identifier))
+    `(go ,l)))
 
 (defun =label ()
   (=destructure (l _)
@@ -141,6 +147,7 @@
                         (=incr)
                         (=decr)
                         (=conditional-goto)
+                        (=goto)
                         )
                        (?op '\;))
     x))
