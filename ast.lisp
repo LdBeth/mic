@@ -91,6 +91,8 @@
                                   (second line))
                           (ref (second line) vars))))))
 
+;; The second pass expands expressions and
+;; the result is close to target asm 
 (defun pass-2 (progm)
   (let ((globals (second progm))
         (fns (third progm)))
@@ -129,6 +131,7 @@
                  (cddr fn))
          ))
 
+;; Final codegen pass
 (defun code-gen (ast)
   (format t ".code~%")
   (loop for f in (third ast)
@@ -147,5 +150,5 @@
         (loop for i from (car args) to (+ (car args) (cadr args) -1)
               do (format t " pop G~A~%" i))))
   (loop for i in (cddr fn)
-        do (format t " ~{~a~^, ~}~%" i))
+        do (format t " ~a ~{~a~^, ~}~%" (car i) (cdr i)))
   (format t "~A endp~%" (car fn)))
