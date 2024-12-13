@@ -33,11 +33,25 @@
 
 (defun =constant ()
   (%and (?constant)
-        (=element)))
+        (=transform (=element)
+                    #'mic-lex:token-data)))
 
-(defun =expr ()
+(defun =binary-op ()
+  (=destructure (e1 op e2)
+                (=list (=atom-expr)
+                       (%and (%or (?op '+) (?op '-))
+                             (=transform (=element)
+                                         #'mic-lex:token-content))
+                       (=atom-expr))
+    `(,op ,e1 ,e2)))
+
+(defun =atom-expr ()
   (%or (=identifier)
        (=constant)))
+
+(defun =expr ()
+  (%or (=binary-op)
+       (=atom-expr)))
 
 (defun ?op (symbol)
   "Matches if the token represents the punctator."
@@ -46,17 +60,15 @@
                    (intern (symbol-name symbol) '#:mic-symbols))))
 
 (defun =declaration ()
-  (=destructure (type var _ expr)
-                (=list (=type) (=var)
-                       (?op '=) (=expr)
-                       (?op '\;))
-    (make-instance 'declaration :type type :var var :expr expr)))
+  (=destructure (type star name _ expr _ )
+                (=list (=type) (%maybe (=star)) (=identifier) (?op '=) (=constant) (?op '\;))
+    `(defvar ,(if star `(* ,type) type) ,name ,expr)))
 
 (defun =program ()
-  (=subseq (%any (%or (=declaration) (=function)
-                      (?fail (error 'parsing-error
-                                    :token (current-token)
-                                    :message "Not a supported toplevel statement."))))))
+  (=transform (=list
+               (%some (%or (=declaration)
+                           (=function))))
+              (lambda (x) (cons 'progn (car x)))))
 
 (defun ?type-specifier ()
   (?token-test o 'mic-lex:keyword
@@ -64,30 +76,87 @@
                        (mapcar (lambda (w)
                                  (intern w '#:mic-symbols))
                                '("void" "char" "short"
-                                 "int" "long" "float"
-                                 "double" "signed" "unsigned" "_Bool"
-                                 "_Complex")))))
+                                 "int" "long" "signed" "unsigned")))))
 
 (defun =type-specifier ()
   (%and (?type-specifier)
-        (=element)))
+        (=transform (=element)
+                    (lambda (x) (symbol-name (mic-lex:token-content x))))))
 
 (defun current-token ()
   (when maxpc::*input-fail*
     (maxpc.input:input-first maxpc::*input-fail*)))
 
 (defun =return-statement ()
-  (=list (?keyword "return")
-         (%maybe (=expr))
-         (?op '\;)))
+  (=destructure (_ e)
+                (=list (?keyword "return")
+                       (%maybe (=expr)))
+    `(return ,e)))
+
+(defun =var-decl ()
+  (=destructure (type star name)
+                (=list (=type) (%maybe (=star)) (=varlist))
+    `(defvar ,(if star `(* ,type) type) ,name)))
+
+(defun =assignment ()
+  (=destructure (id _ e)
+                (=list (=identifier) (?op '=) (=expr))
+    `(setq ,id ,e)))
+
+(defun =incr ()
+  (=destructure (e _)
+                (=list (=identifier) (?op '++))
+    `(incf ,e)))
+
+(defun =decr ()
+  (=destructure (e _)
+                (=list (=identifier) (?op '--))
+    `(decf ,e)))
 
 (defun =statement ()
-  (%or
-   (=return-statement)))
+  (=destructure (x _)
+                (=list (%or
+                        (=var-decl)
+                        (=return-statement)
+                        (=assignment)
+                        (=incr)
+                        (=decr)
+                        )
+                       (?op '\;))
+    x))
+
+(defun =type ()
+  (%or (%some (=type-specifier))
+       #+(or)
+       (?fail (error 'parsing-error
+                     :token (current-token)
+                     :message "Not a supported data type."))))
+
+(defun =varlist ()
+  (=transform (=subseq (?seq (%any (?seq (=identifier) (?op '\,)))
+                             (=identifier)))
+              (lambda (x)
+                (remove-if (lambda (x)
+                             (typep x 'mic-lex:punctuator))
+                           x))))
+
+(defun =star ()
+  (%and (?op '*)
+        (=element)))
 
 (defun =function ()
-  (=list (=type-specifier) (=identifier) (?op '\() (?op '\))
-         (?op '{)
-         (%any (=statement))
-         (?op '})))
+  (=destructure (type star name _ args _ _ body _)
+                (=list (=type) (%maybe (=star)) (=identifier)
+                       (?op '\()
+                       (%maybe (=varlist))
+                       (?op '\))
+                       (?op '{)
+                       (%any (=statement))
+                       (%or (?op '})
+                            (?fail (error 'parsing-error
+                                          :token (current-token)
+                                          :message "Failed to parse function."))))
+    `(defun (,(if star `(* ,type) type) ,name ,args)
+       ,@body)))
+
 

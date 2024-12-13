@@ -2,8 +2,8 @@
   (:nicknames #:mic-lex)
   (:use #:common-lisp)
   (:shadow #:keyword #:read-char #:type-of)
-  (:export #:tokenizer #:lexing-error
-           #:content #:token-content
+  (:export #:tokenizer #:cleanup-tokens #:lexing-error
+           #:content #:token-content #:token-position #:token-data
            #:keyword #:identifier
            #:constant #:string-literal
            #:punctuator #:comment
@@ -30,10 +30,10 @@
 (defpackage #:org.sdf.ldbeth.minimal.intercal.c.parsec
   (:nicknames #:mic-pc)
   (:use #:common-lisp #:maxpc)
-  (:export #:parse))
+  (:export #:parse #:parsing-error))
 
 (defpackage #:org.sdf.ldbeth.minimal.intercal.c
   (:nicknames #:mic)
   (:use #:mic-lex #:mic-pc)
-  (:export #:tokenizer #:lexing-error
+  (:export #:tokenizer #:cleanup-tokens #:lexing-error #:parsing-error
            #:parse #:compiler-error))

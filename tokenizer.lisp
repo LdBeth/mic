@@ -35,16 +35,6 @@
   ((instruction :initarg :content :type string
                 :reader token-content)))
 
-;; Convert token to lisp data types
-(defgeneric token-data (token)
-  (:documentation "Retrive data of token.")
-  (:method (token)
-    (error "Retrive data method not defined for ~S" token)))
-
-(defmethod token-data ((token keyword))
-  (token-content token))
-
-
 (defmethod print-object ((obj comment) stream)
   (let* ((s (token-content obj))
          (is-long (> (length s) 10)))
@@ -159,14 +149,14 @@ current position at line ~D, column ~D: ~A."
 
 ;; Note that "0" is not a decimal number in ISO C99.
 (defconstant +c-decimal-integer+
-  (re:compile-re "[1-9]+[0-9]*(?[uUlL]|ll|LL)?"))
+  (re:compile-re "([1-9]+[0-9]*)(?[uUlL]|ll|LL)?"))
 
 ;; The way ISO C99 intended
 (defconstant +c-octal-integer+
-  (re:compile-re "0[0-7]*(?[uUlL]|ll|LL)?"))
+  (re:compile-re "(0[0-7]*)(?[uUlL]|ll|LL)?"))
 
 (defconstant +c-hexal-integer+
-  (re:compile-re "0[xX]*[0-9a-fA-F]+(?[uUlL]|ll|LL)?"))
+  (re:compile-re "0[xX]([0-9a-fA-F]+)(?[uUlL]|ll|LL)?"))
 
 (defconstant +c-string+
   (re:compile-re "\"([^\"\\
@@ -178,6 +168,11 @@ current position at line ~D, column ~D: ~A."
 
 (defun match (re string)
   "if the string matches a regex, return the matched string."
+  (let ((m (re:match-re re string :exact t)))
+    (and m (re:match-string m))))
+
+(defun match-num (re string)
+  "Extract number from string"
   (let ((m (re:match-re re string :exact t)))
     (and m (re:match-string m))))
 
@@ -355,3 +350,35 @@ not be ignored by the parser."
   (let ((state (make-instance 'parse-state)))
     (loop while (get-a-token state stream))
     (token-list state)))
+
+(defun cleanup-tokens (token-list)
+  "Remove comment and preprocessor instructions."
+  (remove-if (lambda (token)
+               (or (typep token 'comment)
+                   (typep token 'preprocessor)))
+                 token-list))
+
+;; Convert token to lisp data types
+(defgeneric token-data (token)
+  (:documentation "Retrive data of token.")
+  (:method (token)
+    (error "Retrive data method not defined for ~S" token)))
+
+(defmethod token-data ((token keyword))
+  (token-content token))
+
+(defmethod token-data ((token constant))
+  (let ((content (token-content token)))
+    (case (slot-value token 'type)
+      (decimal (parse-integer
+                (car (re:match-groups
+                      (re:match-re +c-decimal-integer+ content)))
+                :radix 10))
+      (octal (parse-integer
+                (car (re:match-groups
+                      (re:match-re +c-octal-integer+ content)))
+                :radix 8))
+      (hexadecimal (parse-integer
+                    (car (re:match-groups
+                          (re:match-re +c-hexal-integer+ content)))
+                    :radix 16)))))

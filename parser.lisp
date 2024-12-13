@@ -1,4 +1,5 @@
 ;;; list token -> tree
+;; Concrete syntax tree data structures
 (in-package #:mic-cst)
 
 (defclass cst ()

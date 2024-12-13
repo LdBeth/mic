@@ -221,3 +221,61 @@ by the above grammar.
 #+END_SRC
 
 ** Grammar
+
+#+BEGIN_EXAMPLE
+program:
+  toplevel+
+
+toplevel:
+  function
+  toplevel-variable-declaration
+
+toplevel-variable-declaration:
+  type indentifier '=' constant ';'
+#+END_EXAMPLE
+
+The grammar for C functions closely resembles K&R C, but
+with a few differences.
+
+#+BEGIN_EXAMPLE
+function:
+  type identifier '(' varlist? ')'
+    '{' statement* '}'
+varlist:
+  identifier (',' varlist)*
+statement:
+  return-statement
+  variable-declaration
+  increment
+  decrement
+  assignment
+
+increment:
+  identifier '++'
+
+decrement:
+  identifier '--'
+
+variable-declaration:
+  type varilist ';'
+
+return-statement:
+  'return' expr ';'
+
+assignment:
+  identifier '=' expr ';'
+
+expr:
+  identifier
+  constant
+  binary-op
+
+binary-op:
+  atom '+' atom
+  atom '-' atom
+
+atom:
+  identifier
+  constant
+#+END_EXAMPLE
+

@@ -12,9 +12,9 @@
   #+sbcl
   (sb-ext:exit exit-code))
 
-(defun parse (source &optional (driver (=program)))
+(defun parse (source &optional (driver (mic-pc::=program)))
   "Return AST of the source."
-  (let ((tokens (mic:tokenizer source)))
+  (let ((tokens (mic-lex:cleanup-tokens (mic:tokenizer source))))
     (maxpc:parse tokens driver)
     ))
 
@@ -52,15 +52,15 @@
                          (format t "~{~a~^~%~}" (coerce tokens 'list)))))
                  (user-quit 0))
                 (parsing
-                 (format *standard-output* "Lexing file ~A.~%" file)
+                 (format *standard-output* "Parsing file ~A.~%" file)
                  (handler-bind ((mic:compiler-error (lambda (condition)
                                                     (format *error-output* "~&~A~&" condition)
                                                     (user-quit -1)))
                                 (error (lambda (condition)
                                          (format *error-output* "Uncaught error: ~A~&" condition))))
                      (with-open-file (f file :direction :input)
-                       (let ((ast (parse f (mic-pc::=function))))
-                         (format t "~S" ast))))
+                       (let ((ast (parse f)))
+                         (pprint ast))))
                  (user-quit 0))
                 (t
                  (format t "Compiling file ~A.~%" file)
