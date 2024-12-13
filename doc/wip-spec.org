@@ -426,4 +426,39 @@ main endp
 G2 sdword ?
 G3 sdword ?
  end
+
+With out optimization:
+
+Compiling file test/more.c.
+.code
+main proc
+ pop G0
+ pop G1
+ mov eax, G2
+ add eax, 1
+ mov G4, eax
+ mov eax, 10
+ add eax, 1
+ mov G2, eax
+ mov G3, 0
+L1
+ inc G3
+ cmp G3, G2
+ jl L1
+ cmp 1, 2
+ jl L2
+ mov eax, G2
+ add eax, G3
+ ret 
+L2
+ mov eax, 0
+ ret 
+main endp
+.data
+G0 sdword ?
+G1 sdword ?
+G2 sdword ?
+G3 sdword ?
+G4 sdword ?
+ end
 #+END_EXAMPLE

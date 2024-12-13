@@ -26,7 +26,7 @@
 
 (progn
   (if *command-line-arguments*
-      (let (arg lexing parsing file (pass 0))
+      (let (arg lexing parsing file opt (pass 0))
         (loop while *command-line-arguments*
               always (when (flagp (car *command-line-arguments*))
                        (setf arg (pop *command-line-arguments*))
@@ -34,6 +34,8 @@
                               (setf lexing t))
                              ((string= "-P" arg)
                               (setf parsing t))
+                             ((string= "-O" arg)
+                              (setf opt t))
                              ((string= "-U" arg)
                               (setf pass (parse-integer (pop *command-line-arguments*))))
                              (t
@@ -81,10 +83,10 @@
                      (with-open-file (f file :direction :input)
                        (let ((ast (parse f)))
                          (setf ast (mic-ast:pass-1 ast))
-                         (setf ast (mic-ast:pass-2 ast))
-                         (setf ast (mic-ast:pass-3 ast))
+                         (if opt (setf ast (mic-ast:pass-2 ast)))
+                         (if opt (setf ast (mic-ast:pass-3 ast)))
                          (setf ast (mic-ast:pass-4 ast))
-                         (setf ast (mic-ast:pass-5 ast))
+                         (if opt (setf ast (mic-ast:pass-5 ast)))
                          (mic-ast:code-gen ast))))
                  (user-quit 0)))))))
   (format *error-output* "No input file.~%")

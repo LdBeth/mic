@@ -31,7 +31,7 @@
           (loop for toplevel in (cdr program)
                 if (eq 'defun (car toplevel))
                   collect (elaborate toplevel globals)))
-    `(prog ,globals ,fns ,*id*)))
+    `(prog ,globals ,fns ,(make-array *id* :initial-element t))))
 
 (defun adding-var (toplevel variables)
   (if (assoc (mic-lex:token-content (third toplevel))
@@ -97,7 +97,8 @@
 
 ;; Eliminate assignment to unused variable
 (defun pass-2 (progm)
-  (let ((table (make-array (fourth progm) :initial-element nil)))
+  (let ((table (make-array (length (fourth progm))
+                           :initial-element nil)))
     (loop for fn in (third progm)
           do (loop for i in (cddr fn)
                    do (mapc (lambda (x)
