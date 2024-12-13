@@ -113,6 +113,25 @@
                 (=list (=identifier) (?op '--))
     `(decf ,e)))
 
+(defun =conditional-goto ()
+  (=destructure (_ _ e1 op e2 _ _ l)
+                (=list (?keyword "if")
+                       (?op '\()
+                       (=atom-expr)
+                       (%and (%or (?op '<) (?op '>) (?op '==))
+                             (=transform (=element)
+                                         #'mic-lex:token-content))
+                       (=atom-expr)
+                       (?op '\))
+                       (?keyword "goto")
+                       (=identifier))
+    `(if (,op ,e1 ,e2) ,l)))
+
+(defun =label ()
+  (=destructure (l _)
+                (=list (=identifier) (?op '\:))
+                `(labels ,l)))
+
 (defun =statement ()
   (=destructure (x _)
                 (=list (%or
@@ -121,6 +140,7 @@
                         (=assignment)
                         (=incr)
                         (=decr)
+                        (=conditional-goto)
                         )
                        (?op '\;))
     x))
@@ -153,7 +173,7 @@
                        (?op '\))
                        (%any (=statement))
                        (?op '{)
-                       (%any (=statement))
+                       (%any (%or (=label) (=statement)))
                        (%or (?op '})
                             (?fail (error 'parsing-error
                                           :token (current-token)

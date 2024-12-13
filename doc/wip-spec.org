@@ -250,6 +250,8 @@ statement:
   increment
   decrement
   assignment
+  computed-goto
+  label
 
 increment:
   identifier '++'
@@ -278,5 +280,16 @@ binary-op:
 atom:
   identifier
   constant
+
+computed-goto:
+  'if' '(' compare ')' 'goto' identifier ';'
+
+label:
+  identifier ':'
+
+compare:
+  atom '<' atom
+  atom '>' atom
+  atom '==' atom
 #+END_EXAMPLE
 
