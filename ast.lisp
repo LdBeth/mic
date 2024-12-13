@@ -107,15 +107,20 @@
                                   (setf (aref table
                                               (parse-integer (subseq x 1)))
                                         t)))
-                            (if (eq (car i) 'setq)
-                                (alexandria:flatten (cddr i))
-                                (alexandria:flatten i)))))
+                            (cond
+                              ((eq (car i) 'setq)
+                               (alexandria:flatten (cddr i)))
+                              ((or (eq (car i) 'incf) (eq (car i) 'decf))
+                               nil)
+                              (t (alexandria:flatten i))))))
 
     (let ((fns (third progm)))
       (setf fns (mapcar (lambda (x)
                           (remove-if (lambda (l)
                                        (and (consp l)
-                                            (eq (car l) 'setq)
+                                            (or (eq (car l) 'setq)
+                                                (eq (car l) 'incf)
+                                                (eq (car l) 'decf))
                                             (not (aref table
                                                        (parse-integer (subseq (cadr l) 1))))))
                                      x))
