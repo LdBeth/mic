@@ -307,3 +307,123 @@ type:
   type '*'
 #+END_EXAMPLE
 
+** Compiler Passes
+
+*** Pass 1
+Generate unique variable name.
+
+*** Pass 2 *
+Removed assignment to un-referenced variables. Repress allocation for
+unused variables.
+
+*** Pass 3 *
+Constant folding of variable assignment and value comparison
+in =if= statement.
+
+*** Pass 4
+Generate assembly style code
+
+*** Pass 5 *
+Removal of dead code result from =jmp=.
+
+** Example
+
+#+BEGIN_EXAMPLE
+int main(argc, argv)
+     int argc;
+     char **argv;
+{
+  char /**/a,b,c;
+  c= a + 1;
+  a = 0x0a + 1;
+  b = 0;
+ L1: b++;
+  if (b < a) goto L1;
+  if (1 < 2) goto L2;
+  return a + b;
+ L2: return 0;
+}
+
+Parsing file test/more.c.
+
+(PROGN (DEFUN (("int") #<token #|main|# at (4 . 0)>
+               (#<token #|argc|# at (9 . 0)>
+                #<token #|argv|# at (15 . 0)>)) (DEFVAR
+                                                 ("char")
+                                                 (#<token #|a|# at (11
+                                                                    . 4)>
+                                                  #<token #|b|# at (13
+                                                                    . 4)>
+                                                  #<token #|c|# at (15
+                                                                    . 4)>))
+         (SETQ #<token #|c|# at (2 . 5)>
+               (+ #<token #|a|# at (5 . 5)> 1))
+         (SETQ #<token #|a|# at (2 . 6)> (+ 10 1))
+         (SETQ #<token #|b|# at (2 . 7)> 0)
+         (LABELS #<token #|L1|# at (1 . 8)>)
+         (INCF #<token #|b|# at (5 . 8)>)
+         (IF (< #<token #|b|# at (6 . 9)> #<token #|a|# at (10 . 9)>)
+             (GO #<token #|L1|# at (18 . 9)>))
+         (IF (< 1 2) (GO #<token #|L2|# at (18 . 10)>))
+         (RETURN (+ #<token #|a|# at (9 . 11)>
+                    #<token #|b|# at (13 . 11)>))
+         (LABELS #<token #|L2|# at (1 . 12)>)
+         (RETURN 0)))
+Generate pass 1.
+
+(PROG ()
+      (("main" (0 2 5) (SETQ "G4" (+ "G2" 1)) (SETQ "G2" (+ 10 1))
+        (SETQ "G3" 0) (LABELS "L1") (INCF "G3")
+        (IF (< "G3" "G2") (GO "L1")) (IF (< 1 2) (GO "L2"))
+        (RETURN (+ "G2" "G3")) (LABELS "L2") (RETURN 0)))
+      5)
+Generate pass 2.
+
+(PROG ()
+      (("main" (0 2 5) (SETQ "G2" (+ 10 1)) (SETQ "G3" 0)
+        (LABELS "L1") (INCF "G3") (IF (< "G3" "G2") (GO "L1"))
+        (IF (< 1 2) (GO "L2")) (RETURN (+ "G2" "G3")) (LABELS "L2")
+        (RETURN 0)))
+      #(NIL NIL T T NIL))
+Generate pass 3.
+
+(PROG ()
+      (("main" (0 2 5) (SETQ "G2" 11) (SETQ "G3" 0) (LABELS "L1")
+        (INCF "G3") (IF (< "G3" "G2") (GO "L1")) (GO "L2")
+        (RETURN (+ "G2" "G3")) (LABELS "L2") (RETURN 0)))
+      #(NIL NIL T T NIL))
+Generate pass 4.
+
+(PROG ()
+      (("main" (0 2 5) ("mov" "G2" 11) ("mov" "G3" 0) (LABELS "L1")
+        ("inc" "G3") ("cmp" "G3" "G2") ("jl" "L1") ("jmp" "L2")
+        ("mov" "eax" "G2") ("add" "eax" "G3") ("ret") (LABELS "L2")
+        ("mov" "eax" 0) ("ret")))
+      #(NIL NIL T T NIL))
+Generate pass 5.
+
+(PROG ()
+      (("main" (0 2 5) ("mov" "G2" 11) ("mov" "G3" 0) (LABELS "L1")
+        ("inc" "G3") ("cmp" "G3" "G2") ("jl" "L1") ("mov" "eax" 0)
+        ("ret")))
+      #(NIL NIL T T NIL))
+
+Compiling file test/more.c.
+.code
+main proc
+ pop eax
+ pop eax
+ mov G2, 11
+ mov G3, 0
+L1
+ inc G3
+ cmp G3, G2
+ jl L1
+ mov eax, 0
+ ret
+main endp
+.data
+G2 sdword ?
+G3 sdword ?
+ end
+#+END_EXAMPLE
