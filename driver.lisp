@@ -26,7 +26,7 @@
 
 (progn
   (if *command-line-arguments*
-      (let (arg lexing parsing file)
+      (let (arg lexing parsing file (pass 0))
         (loop while *command-line-arguments*
               always (when (flagp (car *command-line-arguments*))
                        (setf arg (pop *command-line-arguments*))
@@ -34,6 +34,8 @@
                               (setf lexing t))
                              ((string= "-P" arg)
                               (setf parsing t))
+                             ((string= "-U" arg)
+                              (setf pass (parse-integer (pop *command-line-arguments*))))
                              (t
                               (format *error-output* "Unknown flag ~A.~%" arg)))))
         (if (> (length *command-line-arguments*) 0)
@@ -60,7 +62,9 @@
                                          (format *error-output* "Uncaught error: ~A~&" condition))))
                      (with-open-file (f file :direction :input)
                        (let ((ast (parse f)))
-                         (pprint ast))))
+                         (pprint ast)
+                         (if (> pass 0)
+                             (pprint (mic-ast:pass-1 ast))))))
                  (user-quit 0))
                 (t
                  (format t "Compiling file ~A.~%" file)

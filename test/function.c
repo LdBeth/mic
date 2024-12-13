@@ -1,8 +1,9 @@
-int g = 1;
-int square(a, b, c) {
-  int a;
-  int b;
-  a = c + 1;
+int c = 1;
+int g = 2;
+int square(a, b)
+     int a, b; {
+  int c;
+  a = c + 4;
   b++;
   c = g;
   return a + c;
