@@ -1,8 +1,7 @@
-(defpackage #:org.sdf.ldbeth.minimal.intercal.c
-  (:nicknames #:mic)
+(defpackage #:org.sdf.ldbeth.minimal.intercal.c.lex
+  (:nicknames #:mic-lex)
   (:use #:common-lisp)
-  (:shadow #:keyword #:read-char
-           #:intern #:type-of)
+  (:shadow #:keyword #:read-char #:type-of)
   (:export #:tokenizer #:lexing-error
            #:content #:token-content
            #:keyword #:identifier
@@ -30,4 +29,11 @@
 
 (defpackage #:org.sdf.ldbeth.minimal.intercal.c.parsec
   (:nicknames #:mic-pc)
-  (:use #:common-lisp #:maxpc))
+  (:use #:common-lisp #:maxpc)
+  (:export #:parse))
+
+(defpackage #:org.sdf.ldbeth.minimal.intercal.c
+  (:nicknames #:mic)
+  (:use #:mic-lex #:mic-pc)
+  (:export #:tokenizer #:lexing-error
+           #:parse #:compiler-error))

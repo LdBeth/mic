@@ -1,4 +1,4 @@
-(in-package #:mic)
+(in-package #:mic-lex)
 
 ;;; The symbol table is the mic-symbols package
 ;; Each symbol has propterty 'type 'location
@@ -9,4 +9,3 @@
     (when location
       (setf (get s 'location) location))
     s))
-

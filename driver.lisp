@@ -12,6 +12,12 @@
   #+sbcl
   (sb-ext:exit exit-code))
 
+(defun parse (source &optional (driver (=program)))
+  "Return AST of the source."
+  (let ((tokens (mic:tokenizer source)))
+    (maxpc:parse tokens driver)
+    ))
+
 (defparameter *command-line-arguments*
   #+ccl
   ccl:*unprocessed-command-line-arguments*
@@ -20,12 +26,14 @@
 
 (progn
   (if *command-line-arguments*
-      (let (arg lexing file)
+      (let (arg lexing parsing file)
         (loop while *command-line-arguments*
               always (when (flagp (car *command-line-arguments*))
                        (setf arg (pop *command-line-arguments*))
                        (cond ((string= "-L" arg)
                               (setf lexing t))
+                             ((string= "-P" arg)
+                              (setf parsing t))
                              (t
                               (format *error-output* "Unknown flag ~A.~%" arg)))))
         (if (> (length *command-line-arguments*) 0)
@@ -34,7 +42,7 @@
               (cond
                 (lexing
                  (format *standard-output* "Lexing file ~A.~%" file)
-                 (handler-bind ((mic:lexing-error (lambda (condition)
+                 (handler-bind ((mic:compiler-error (lambda (condition)
                                                     (format *error-output* "~&~A~&" condition)
                                                     (user-quit -1)))
                                 (error (lambda (condition)
@@ -42,6 +50,17 @@
                      (with-open-file (f file :direction :input)
                        (let ((tokens (mic:tokenizer f)))
                          (format t "~{~a~^~%~}" (coerce tokens 'list)))))
+                 (user-quit 0))
+                (parsing
+                 (format *standard-output* "Lexing file ~A.~%" file)
+                 (handler-bind ((mic:compiler-error (lambda (condition)
+                                                    (format *error-output* "~&~A~&" condition)
+                                                    (user-quit -1)))
+                                (error (lambda (condition)
+                                         (format *error-output* "Uncaught error: ~A~&" condition))))
+                     (with-open-file (f file :direction :input)
+                       (let ((ast (parse f (mic-pc::=function))))
+                         (format t "~S" ast))))
                  (user-quit 0))
                 (t
                  (format t "Compiling file ~A.~%" file)

@@ -36,7 +36,7 @@
   ())
 
 (defclass return (statement simple-subexpression-mixin)
-  ())
+  (expr :initarg :expr :type expression))
 
 (defclass side-effect (statement simple-subexpression-mixin)
   ())

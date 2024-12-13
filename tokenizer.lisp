@@ -1,5 +1,5 @@
 ;;; string -> list token
-(in-package #:mic)
+(in-package #:mic-lex)
 
 ;; The token protocol
 (defclass token ()
@@ -78,7 +78,10 @@
                            :initial-element nil :fill-pointer 0)
            :reader token-list)))
 
-(define-condition lexing-error (error)
+(define-condition mic:compiler-error (error)
+  ())
+
+(define-condition lexing-error (mic:compiler-error)
   ((parse-state :initarg :state)
    (error-message :initarg :message)
    (pos :initarg :pos))
