@@ -228,6 +228,22 @@
                    (push line acc)))
                (unless skip
                  (push line acc))))
+    (setq body (nreverse acc)
+          rest body
+          acc nil
+          skip nil)
+    ;; Fix up for jmp and label next to each other
+    (loop for line in body
+          do (progn
+               (setf rest (cdr rest))
+               (when (string= (car line) "jmp")
+                 (when (equal (list 'labels (cadr line))
+                              (car rest))
+                   (setq skip t)))
+               (unless skip
+                 (push line acc))
+               (when (eq (car line) 'labels)
+                 (setq skip nil))))
     (setq body (nreverse acc))
     (list* (first fn)
            (second fn)
