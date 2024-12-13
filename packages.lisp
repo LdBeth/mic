@@ -16,7 +16,7 @@
   (:nicknames #:mic-ast)
   (:use #:common-lisp)
   (:shadow #:gensym)
-  (:export #:pass-1 #:code-gen))
+  (:export #:pass-1 #:pass-2 #:code-gen))
 
 (defpackage #:org.sdf.ldbeth.minimal.intercal.c.parsec
   (:nicknames #:mic-pc)
