@@ -240,6 +240,7 @@ with a few differences.
 #+BEGIN_EXAMPLE
 function:
   type identifier '(' varlist? ')'
+    variable-declaration
     '{' statement* '}'
 varlist:
   identifier (',' varlist)*
